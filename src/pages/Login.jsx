@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { mockLogin, getMockUsers } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showMockUsers, setShowMockUsers] = useState(false);
+
+  const mockUsers = getMockUsers();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -50,40 +55,37 @@ const Login = () => {
     if (!validateForm()) return;
     
     setIsLoading(true);
+    setErrors({});
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Use mock login
+      const result = await mockLogin(formData.email, formData.password);
       
-      // Here you would make actual API call to your backend
-      // const response = await fetch('/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const userData = await response.json();
+      console.log('Login successful:', result);
       
-      // Simulate successful login with SQL structure
-      const mockUserData = {
-        UserID: 1,
-        FullName: 'Học viên HUTECH',
-        Email: formData.email,
-        Role: 'customer',
-        IsGuest: false,
-        CreatedAt: new Date().toISOString()
-      };
+      // Redirect based on user role
+      if (result.user.Role === 'agent' || result.user.Role === 'admin') {
+        navigate('/agent/chat');
+      } else {
+        navigate('/');
+      }
       
-      // Use AuthContext login function
-      // login(userData); // You would use this with real API data
-      
-      localStorage.setItem('user', JSON.stringify(mockUserData));
-      
-      navigate('/');
     } catch (error) {
-      setErrors({ general: 'Đăng nhập thất bại. Vui lòng thử lại.' });
+      console.error('Login failed:', error);
+      setErrors({ 
+        submit: error.message || 'Đăng nhập thất bại. Vui lòng thử lại.' 
+      });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleMockLogin = (user) => {
+    setFormData({
+      email: user.Email,
+      password: user.Role === 'admin' ? 'admin123' : '123456'
+    });
+    setShowMockUsers(false);
   };
 
   return (
@@ -139,7 +141,7 @@ const Login = () => {
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          {errors.general && (
+          {(errors.general || errors.submit) && (
             <div style={{
               backgroundColor: '#fef2f2',
               border: '1px solid #fecaca',
@@ -149,7 +151,7 @@ const Login = () => {
               marginBottom: '1.5rem',
               fontSize: '0.9rem'
             }}>
-              {errors.general}
+              {errors.general || errors.submit}
             </div>
           )}
 
@@ -304,6 +306,79 @@ const Login = () => {
             )}
           </button>
         </form>
+
+        {/* Mock Users for Testing */}
+        <div style={{ marginTop: '1.5rem' }}>
+          <button
+            type="button"
+            onClick={() => setShowMockUsers(!showMockUsers)}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: '#f3f4f6',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.5rem',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {showMockUsers ? '🙈 Ẩn' : '👥 Hiện'} Mock Users (Test)
+          </button>
+
+          {showMockUsers && (
+            <div style={{
+              marginTop: '1rem',
+              padding: '1rem',
+              backgroundColor: '#f8fafc',
+              borderRadius: '0.5rem',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h4 style={{ 
+                margin: '0 0 1rem 0', 
+                fontSize: '0.9rem',
+                color: '#374151'
+              }}>
+                Click để đăng nhập nhanh:
+              </h4>
+              {mockUsers.map((user) => (
+                <button
+                  key={user.UserID}
+                  onClick={() => handleMockLogin(user)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '0.75rem',
+                    marginBottom: '0.5rem',
+                    backgroundColor: 'white',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '0.5rem',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontSize: '0.85rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.backgroundColor = '#f0f9ff';
+                    e.target.style.borderColor = '#3b82f6';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.backgroundColor = 'white';
+                    e.target.style.borderColor = '#e5e7eb';
+                  }}
+                >
+                  <div style={{ fontWeight: '600', color: '#1f2937' }}>
+                    {user.FullName}
+                  </div>
+                  <div style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+                    {user.Email} | {user.Role} | PW: {user.Role === 'admin' ? 'admin123' : '123456'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Register Link */}
         <div style={{

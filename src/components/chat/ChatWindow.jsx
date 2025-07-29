@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useChatContext } from '../contexts/ChatContext';
-import { useAuth } from '../contexts/AuthContext';
-import MessageList from './chat/MessageList';
-import MessageInput from './chat/MessageInput';
-import ChatHeader from './chat/ChatHeader';
-import RoomList from './chat/RoomList';
-import FileUpload from './chat/FileUpload';
-import RatingModal from './chat/RatingModal';
+import { useChatContext } from '../../contexts/ChatContext';
+import { useAuth } from '../../contexts/AuthContext';
+import MessageList from './MessageList';
+import MessageInput from './MessageInput';
+import ChatHeader from './ChatHeader';
+import RoomList from './RoomList';
+// import FileUpload from './FileUpload';
+// import RatingModal from './RatingModal';
 
 const ChatWindow = ({ onClose }) => {
   const [view, setView] = useState('chat'); // 'chat', 'rooms', 'agents'

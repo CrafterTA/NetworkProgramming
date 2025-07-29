@@ -1,17 +1,26 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AgentChat from './pages/AgentChat';
+import TestChat from './pages/TestChat';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ChatWidget from './components/chat/ChatWidget';
 
 
 
 function App() {
+  const location = useLocation();
+  
+  // Check if current route is agent route
+  const isAgentRoute = location.pathname.startsWith('/agent');
+  
   useEffect(() => {
     // Khởi tạo ScrollReveal
     if (window.ScrollReveal) {
@@ -61,20 +70,35 @@ function App() {
 
   return (
     <AuthProvider>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* Protected routes example - uncomment when you have courses page */}
-        {/* <Route path="/courses" element={
-          <ProtectedRoute>
-            <Courses />
-          </ProtectedRoute>
-        } /> */}
-      </Routes>
-     
-      <Footer />
+      <ChatProvider>
+        {/* Only show Navbar for non-agent routes */}
+        {!isAgentRoute && <Navbar />}
+        
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/test-chat" element={<TestChat />} />
+          
+          {/* Agent Chat Route - Protected for agents/admins only */}
+          <Route path="/agent/chat" element={
+            <ProtectedRoute allowedRoles={['agent', 'admin']}>
+              <AgentChat />
+            </ProtectedRoute>
+          } />
+          
+          {/* Protected routes example - uncomment when you have courses page */}
+          {/* <Route path="/courses" element={
+            <ProtectedRoute>
+              <Courses />
+            </ProtectedRoute>
+          } /> */}
+        </Routes>
+       
+        {/* Only show Footer and ChatWidget for non-agent routes */}
+        {!isAgentRoute && <Footer />}
+        {!isAgentRoute && <ChatWidget />}
+      </ChatProvider>
     </AuthProvider>
   );
 }

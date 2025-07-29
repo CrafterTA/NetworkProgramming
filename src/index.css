@@ -3,8 +3,12 @@
 @import "tailwindcss";
 :root {
   --primary-color: #01bbbf;
+  --primary-dark: #019296;
   --text-dark: #1d293d;
   --text-light: #62748e;
+  --success-color: #10b981;
+  --error-color: #ef4444;
+  --warning-color: #f59e0b;
   --extra-light: #fafafa;
   --white: #ffffff;
   --max-width: 1400px;
