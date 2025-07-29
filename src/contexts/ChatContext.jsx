@@ -94,6 +94,98 @@ const MOCK_ROOMS = [
       timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
     },
     unreadCount: 1
+  },
+  {
+    id: 'room_005',
+    customer: {
+      name: 'Nguyễn Minh Tú',
+      email: 'guest_001@temp.com',
+      phone: '0988123456',
+      type: 'guest'
+    },
+    subject: 'Tư vấn chương trình học online',
+    status: 'active',
+    priority: 'normal',
+    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 minutes ago
+    updatedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
+    messageCount: 6,
+    duration: '18 phút',
+    fileCount: 0,
+    lastMessage: {
+      content: 'Em cảm ơn anh rất nhiều!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString()
+    },
+    unreadCount: 0
+  },
+  {
+    id: 'room_006',
+    customer: {
+      name: 'Lê Thị Hương',
+      email: 'guest_002@temp.com',
+      phone: '0977654321',
+      type: 'guest'
+    },
+    subject: 'Hỏi về thủ tục nhập học',
+    status: 'waiting',
+    priority: 'high',
+    createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
+    updatedAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(), // 1 minute ago
+    messageCount: 3,
+    duration: '9 phút',
+    fileCount: 2,
+    lastMessage: {
+      content: 'Em gửi bằng tốt nghiệp để anh kiểm tra',
+      type: 'file',
+      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString()
+    },
+    unreadCount: 2
+  },
+  {
+    id: 'room_007',
+    customer: {
+      name: 'Trần Văn Đức',
+      email: 'guest_003@temp.com',
+      phone: '0966887799',
+      type: 'guest'
+    },
+    subject: 'Liên hệ khẩn cấp',
+    status: 'active',
+    priority: 'urgent',
+    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+    updatedAt: new Date(Date.now() - 30 * 1000).toISOString(), // 30 seconds ago
+    messageCount: 8,
+    duration: '4.5 phút',
+    fileCount: 1,
+    lastMessage: {
+      content: 'Anh ơi, em cần giải quyết gấp!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 30 * 1000).toISOString()
+    },
+    unreadCount: 1
+  },
+  {
+    id: 'room_008',
+    customer: {
+      name: 'Vũ Thị Lan Anh',
+      email: 'guest_004@temp.com',
+      phone: '0955443322',
+      type: 'guest'
+    },
+    subject: 'Hỗ trợ kỹ thuật website',
+    status: 'closed',
+    priority: 'normal',
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
+    updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
+    messageCount: 12,
+    duration: '15 phút',
+    fileCount: 3,
+    lastMessage: {
+      content: 'Vấn đề đã được giải quyết. Cảm ơn team support!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+    },
+    unreadCount: 0
   }
 ];
 
@@ -258,6 +350,281 @@ const MOCK_MESSAGES = {
       room_id: 'room_004',
       status: 'sent'
     }
+  ],
+  'room_005': [
+    {
+      id: 'msg_018',
+      content: 'Xin chào! Em muốn tìm hiểu về chương trình học online của trường ạ',
+      type: 'text',
+      timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_019',
+      content: 'Chào bạn! Tôi có thể hỗ trợ bạn về chương trình học online. Bạn quan tâm đến ngành nào?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_020',
+      content: 'Em quan tâm đến ngành Marketing Digital ạ. Học online có được cấp bằng giống học trực tiếp không anh?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_021',
+      content: 'Có bạn à! Bằng cấp sẽ giống hệt như học trực tiếp, không có ghi chú "online". Chương trình Marketing Digital có thời lượng 4 năm với nhiều dự án thực tế.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_022',
+      content: 'Học phí thế nào ạ? Có hỗ trợ trả góp không?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_023',
+      content: 'Học phí là 15 triệu/năm, có thể trả theo học kỳ. Trường cũng có chương trình học bổng và hỗ trợ vay ngân hàng với lãi suất ưu đãi.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_005',
+      status: 'read'
+    },
+    {
+      id: 'msg_024',
+      content: 'Em cảm ơn anh rất nhiều!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
+      room_id: 'room_005',
+      status: 'delivered'
+    }
+  ],
+  'room_006': [
+    {
+      id: 'msg_025',
+      content: 'Chào anh! Em muốn hỏi về thủ tục nhập học ạ',
+      type: 'text',
+      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      sender: { name: 'Lê Thị Hương', role: 'guest' },
+      room_id: 'room_006',
+      status: 'read'
+    },
+    {
+      id: 'msg_026',
+      content: 'Em cần chuẩn bị những giấy tờ gì để nhập học ngành Kế toán ạ?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+      sender: { name: 'Lê Thị Hương', role: 'guest' },
+      room_id: 'room_006',
+      status: 'read'
+    },
+    {
+      id: 'msg_027',
+      content: 'Em gửi bằng tốt nghiệp để anh kiểm tra',
+      type: 'file',
+      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+      sender: { name: 'Lê Thị Hương', role: 'guest' },
+      room_id: 'room_006',
+      status: 'sent',
+      fileData: {
+        name: 'bang_tot_nghiep.pdf',
+        size: '2.5MB',
+        type: 'application/pdf'
+      }
+    }
+  ],
+  'room_007': [
+    {
+      id: 'msg_028',
+      content: 'Anh ơi, em cần hỗ trợ khẩn cấp!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      sender: { name: 'Trần Văn Đức', role: 'guest' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_029',
+      content: 'Chào bạn! Tôi có thể giúp gì cho bạn?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 4.5 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_030',
+      content: 'Em đang làm đơn xin học lại nhưng hệ thống báo lỗi mãi, hôm nay là deadline rồi!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
+      sender: { name: 'Trần Văn Đức', role: 'guest' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_031',
+      content: 'Tôi sẽ kiểm tra hệ thống ngay. Bạn có thể gửi screenshot lỗi không?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 3.5 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_032',
+      content: 'Đây ạ!',
+      type: 'file',
+      timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+      sender: { name: 'Trần Văn Đức', role: 'guest' },
+      room_id: 'room_007',
+      status: 'read',
+      fileData: {
+        name: 'loi_he_thong.png',
+        size: '1.2MB',
+        type: 'image/png'
+      }
+    },
+    {
+      id: 'msg_033',
+      content: 'Tôi thấy vấn đề rồi. Hệ thống đang bảo trì, tôi sẽ xử lý thủ công cho bạn ngay.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_034',
+      content: 'Cảm ơn anh! Em đang lo lắm',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1.5 * 60 * 1000).toISOString(),
+      sender: { name: 'Trần Văn Đức', role: 'guest' },
+      room_id: 'room_007',
+      status: 'read'
+    },
+    {
+      id: 'msg_035',
+      content: 'Anh ơi, em cần giải quyết gấp!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 30 * 1000).toISOString(),
+      sender: { name: 'Trần Văn Đức', role: 'guest' },
+      room_id: 'room_007',
+      status: 'sent'
+    }
+  ],
+  'room_008': [
+    {
+      id: 'msg_036',
+      content: 'Xin chào! Website của trường có vấn đề, em không vào được trang đăng ký môn học',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_037',
+      content: 'Chào bạn! Tôi sẽ kiểm tra vấn đề này. Bạn sử dụng trình duyệt gì?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 58 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_038',
+      content: 'Em dùng Chrome ạ. Nó cứ loading mãi không vào được',
+      type: 'text',
+      timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_039',
+      content: 'Bạn thử xóa cache và cookie xem. Tôi gửi hướng dẫn.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 52 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_040',
+      content: 'Hướng dẫn xóa cache Chrome',
+      type: 'file',
+      timestamp: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_008',
+      status: 'read',
+      fileData: {
+        name: 'huong_dan_xoa_cache.pdf',
+        size: '850KB',
+        type: 'application/pdf'
+      }
+    },
+    {
+      id: 'msg_041',
+      content: 'Em làm theo rồi nhưng vẫn không được ạ',
+      type: 'text',
+      timestamp: new Date(Date.now() - 48 * 60 * 1000).toISOString(),
+      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_042',
+      content: 'Vậy tôi sẽ kết nối remote để hỗ trợ trực tiếp. Bạn có thể cài TeamViewer không?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 47 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_043',
+      content: 'Được ạ! Em cài xong rồi. ID: 1234567890',
+      type: 'text',
+      timestamp: new Date(Date.now() - 46 * 60 * 1000).toISOString(),
+      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_044',
+      content: 'Tôi đã kết nối và sửa được rồi. Vấn đề do extension AdBlock chặn script.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 45.5 * 60 * 1000).toISOString(),
+      sender: { id: 1, name: 'Agent', role: 'agent' },
+      room_id: 'room_008',
+      status: 'read'
+    },
+    {
+      id: 'msg_045',
+      content: 'Vấn đề đã được giải quyết. Cảm ơn team support!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
+      room_id: 'room_008',
+      status: 'read'
+    }
   ]
 };
 
@@ -305,8 +672,11 @@ export const ChatProvider = ({ children }) => {
   const [onlineAgents, setOnlineAgents] = useState(MOCK_ONLINE_AGENTS);
   const [notifications, setNotifications] = useState([]);
   const [typing, setTyping] = useState(null);
+  const [guestSession, setGuestSession] = useState(null); // Track guest session
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 5;
+  const heartbeatInterval = useRef(null);
+  const sessionTimeout = useRef(null);
 
   // Initialize mock data for agents
   useEffect(() => {
@@ -763,6 +1133,168 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Guest Session Management Functions
+  const initializeGuestSession = () => {
+    const sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const session = {
+      id: sessionId,
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString(),
+      isActive: true,
+      roomId: null
+    };
+    
+    setGuestSession(session);
+    localStorage.setItem('chat_guest_session', JSON.stringify(session));
+    
+    // Set session timeout (30 minutes of inactivity)
+    resetSessionTimeout();
+    
+    console.log('Guest session created:', sessionId);
+    return session;
+  };
+
+  const updateGuestActivity = () => {
+    if (guestSession) {
+      const updatedSession = {
+        ...guestSession,
+        lastActivity: new Date().toISOString()
+      };
+      setGuestSession(updatedSession);
+      localStorage.setItem('chat_guest_session', JSON.stringify(updatedSession));
+      resetSessionTimeout();
+    }
+  };
+
+  const resetSessionTimeout = () => {
+    if (sessionTimeout.current) {
+      clearTimeout(sessionTimeout.current);
+    }
+    
+    // 30 minutes timeout
+    sessionTimeout.current = setTimeout(() => {
+      handleGuestDisconnect('timeout');
+    }, 30 * 60 * 1000);
+  };
+
+  const handleGuestDisconnect = (reason = 'unknown') => {
+    console.log(`Guest disconnected: ${reason}`);
+    
+    if (guestSession && currentRoom) {
+      // Notify agent about guest disconnect
+      const disconnectMessage = {
+        id: `disconnect_${Date.now()}`,
+        content: `Khách đã rời cuộc hội thoại (${reason === 'timeout' ? 'Timeout' : 'Đóng trang'})`,
+        type: 'system',
+        timestamp: new Date().toISOString(),
+        sender: { name: 'System', role: 'system' },
+        room_id: currentRoom.id,
+        status: 'delivered'
+      };
+
+      setMessages(prev => [...prev, disconnectMessage]);
+      
+      // Update room status to indicate guest left
+      const updatedRooms = activeRooms.map(room => 
+        room.id === currentRoom.id 
+          ? {
+              ...room,
+              status: 'abandoned',
+              lastMessage: {
+                content: disconnectMessage.content,
+                type: 'system',
+                timestamp: disconnectMessage.timestamp
+              },
+              updatedAt: disconnectMessage.timestamp,
+              guestDisconnected: true,
+              disconnectReason: reason
+            }
+          : room
+      );
+      setActiveRooms(updatedRooms);
+    }
+
+    // Clean up session
+    setGuestSession(null);
+    localStorage.removeItem('chat_guest_session');
+    
+    if (sessionTimeout.current) {
+      clearTimeout(sessionTimeout.current);
+    }
+
+    if (heartbeatInterval.current) {
+      clearInterval(heartbeatInterval.current);
+    }
+  };
+
+  const restoreGuestSession = () => {
+    try {
+      const savedSession = localStorage.getItem('chat_guest_session');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        const now = new Date();
+        const lastActivity = new Date(session.lastActivity);
+        const timeDiff = now - lastActivity;
+        
+        // If last activity was less than 30 minutes ago, restore session
+        if (timeDiff < 30 * 60 * 1000 && session.isActive) {
+          setGuestSession(session);
+          resetSessionTimeout();
+          console.log('Guest session restored:', session.id);
+          return session;
+        } else {
+          // Session expired, clean up
+          localStorage.removeItem('chat_guest_session');
+          console.log('Guest session expired, cleaned up');
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring guest session:', error);
+      localStorage.removeItem('chat_guest_session');
+    }
+    return null;
+  };
+
+  // Page visibility and beforeunload event handlers
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && guestSession) {
+        updateGuestActivity();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      if (guestSession) {
+        handleGuestDisconnect('page_close');
+      }
+    };
+
+    const handlePageHide = () => {
+      if (guestSession) {
+        handleGuestDisconnect('page_hide');
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+    };
+  }, [guestSession]);
+
+  // Initialize guest session on component mount
+  useEffect(() => {
+    if (!isAuthenticated() && !user) {
+      restoreGuestSession();
+    }
+  }, []);
+
   const value = {
     // State
     socket,
@@ -774,6 +1306,7 @@ export const ChatProvider = ({ children }) => {
     notifications,
     typing,
     rooms: activeRooms,
+    guestSession,
     
     // Actions
     sendMessage,
@@ -785,6 +1318,9 @@ export const ChatProvider = ({ children }) => {
     submitRating,
     removeNotification,
     createGuestSession,
+    initializeGuestSession,
+    updateGuestActivity,
+    handleGuestDisconnect,
     
     // Utils
     connectWebSocket

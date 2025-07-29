@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AgentChat from './pages/AgentChat';
+import TestChat from './pages/TestChat';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Navbar from './components/Navbar';
@@ -15,6 +16,11 @@ import ChatWidget from './components/chat/ChatWidget';
 
 
 function App() {
+  const location = useLocation();
+  
+  // Check if current route is agent route
+  const isAgentRoute = location.pathname.startsWith('/agent');
+  
   useEffect(() => {
     // Khởi tạo ScrollReveal
     if (window.ScrollReveal) {
@@ -65,11 +71,14 @@ function App() {
   return (
     <AuthProvider>
       <ChatProvider>
-        <Navbar />
+        {/* Only show Navbar for non-agent routes */}
+        {!isAgentRoute && <Navbar />}
+        
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/test-chat" element={<TestChat />} />
           
           {/* Agent Chat Route - Protected for agents/admins only */}
           <Route path="/agent/chat" element={
@@ -86,8 +95,9 @@ function App() {
           } /> */}
         </Routes>
        
-        <Footer />
-        <ChatWidget />
+        {/* Only show Footer and ChatWidget for non-agent routes */}
+        {!isAgentRoute && <Footer />}
+        {!isAgentRoute && <ChatWidget />}
       </ChatProvider>
     </AuthProvider>
   );
