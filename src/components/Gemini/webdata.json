@@ -1,0 +1,47 @@
+{
+  "title": "GrowthEdu",
+  "description": "Website về phát triển bền vững, quyên góp cho cộng đồng, và các hoạt động vì môi trường.",
+  "usageGuide": "Trên website, bạn có thể xem tin tức, tham gia các chiến dịch quyên góp và tìm hiểu thêm các hoạt động bảo vệ môi trường.",
+  "about": {
+    "content": "Chúng tôi luôn nỗ lực đồng hành cùng cộng đồng để tạo ra những thay đổi tích cực cho môi trường và giáo dục. Qua các chiến dịch, tư vấn và thông tin chính xác, website giúp người dùng cập nhật tin tức và tham gia hành động."
+  },
+  "trainingData": "1. GrowthEdu là gì?\nGrowthEdu là một dự án phát triển mô hình trường học xanh, nơi học sinh có thể học và thực hành các hành động bảo vệ môi trường trong không gian sạch sẽ, thân thiện với thiên nhiên.\n2. Mục tiêu của dự án là gì ?\nMục tiêu của dự án là xây dựng một mạng lưới các trường học xanh, nơi học sinh tham gia vào các sáng kiến bảo vệ môi trường như phân loại rác, trồng cây xanh, và thực hành các hoạt động giáo dục về bảo vệ môi trường.\n3. Làm thế nào tôi có thể tham gia vào các chiến dịch bảo vệ môi trường của trường học?\nBạn có thể tham gia vào các chiến dịch bảo vệ môi trường qua phần Nhiệm vụ Xanh trên trang web của chúng tôi. Tại đây, bạn sẽ thấy các chiến dịch như trồng cây, tái chế rác thải và vệ sinh trường học, hãy chọn một chiến dịch để tham gia, sau đó điền thông tin của bạn.\n4. Các chiến dịch Xanh này có ảnh hưởng gì đến việc giáo dục học sinh về môi trường?\nCác chiến dịch Xanh không chỉ giúp học sinh tham gia vào những hoạt động thực tế mà còn là cơ hội để các em học hỏi về bảo vệ môi trường và thực hành các kỹ năng quan trọng như làm việc nhóm, tư duy sáng tạo và trách nhiệm xã hội.\n5. Tôi có thể đóng góp vào dự án như thế nào?\nBạn có thể đóng góp vào dự án thông qua phần Quyên góp trên website của chúng tôi. Bạn có thể đóng góp tài chính bằng cách lựa chọn dự án đang cần quyên góp, sau đó quét mã QR và quyên góp để hỗ trợ dự án.\n6. Làm thế nào để tôi theo dõi các hoạt động và câu chuyện thành công về bảo vệ môi trường từ các trường học?\nBạn có thể theo dõi các câu chuyện thành công và hoạt động bảo vệ môi trường qua phần Blog cộng đồng trên website của chúng tôi. Tại đây, các trường học sẽ chia sẻ câu chuyện về các sáng kiến “xanh”, như trồng cây, phân loại rác, và các hoạt động ngoài trời. Bạn cũng có thể bình luận, chia sẻ và tham gia vào các hoạt động để lan tỏa thông điệp bảo vệ môi trường.\n7. GrowthEdu có kế hoạch mở rộng mô hình trường học xanh ra toàn quốc không?\nCó, chúng tôi có kế hoạch mở rộng mô hình trường học xanh không chỉ trong khu vực mà còn ra toàn quốc. Mục tiêu của chúng tôi là xây dựng một mạng lưới trường học xanh, nơi mỗi học sinh có thể tham gia vào các hoạt động bảo vệ môi trường và truyền cảm hứng cho cộng đồng xung quanh.\n8. Công nghệ nào sẽ được áp dụng trong dự án GrowthEdu?\nDự án GrowthEdu sẽ sử dụng công nghệ hiện đại để quản lý và tối ưu hóa các hoạt động trường học xanh. Điều này bao gồm việc sử dụng các công cụ thông minh để giảm thiểu rác thải, tiết kiệm tài nguyên và quản lý các chiến dịch bảo vệ môi trường. Công nghệ cũng sẽ giúp theo dõi và đánh giá hiệu quả của các hoạt động trường học xanh.\n9. Lợi ích của việc tham gia dự án này đối với học sinh là gì?\nKhi tham gia GrowthEdu, học sinh sẽ có cơ hội học hỏi và thực hành trực tiếp về bảo vệ môi trường thông qua các chương trình như phân loại rác, trồng cây xanh và các chiến dịch bảo vệ môi trường khác. Các em cũng sẽ phát triển kỹ năng làm việc nhóm, tư duy sáng tạo, và trách nhiệm xã hội. Hơn nữa, các em sẽ nhận được phần thưởng xứng đáng, khích lệ các em tham gia nhiều hơn vào các chiến dịch xanh.",
+  "faq": [
+    {
+      "question": "GrowthEdu là gì?",
+      "answer": "GrowthEdu là một dự án phát triển mô hình trường học xanh, nơi học sinh có thể học và thực hành các hành động bảo vệ môi trường trong không gian sạch sẽ, thân thiện với thiên nhiên."
+    },
+    {
+      "question": "Mục tiêu của dự án là gì?",
+      "answer": "Mục tiêu của dự án là xây dựng một mạng lưới các trường học xanh, nơi học sinh tham gia vào các sáng kiến bảo vệ môi trường như phân loại rác, trồng cây xanh, và thực hành các hoạt động giáo dục về bảo vệ môi trường."
+    },
+    {
+      "question": "Làm thế nào tôi có thể tham gia vào các chiến dịch bảo vệ môi trường của trường học?",
+      "answer": "Bạn có thể tham gia vào các chiến dịch bảo vệ môi trường qua phần Nhiệm vụ Xanh trên trang web của chúng tôi. Tại đây, bạn sẽ thấy các chiến dịch như trồng cây, tái chế rác thải và vệ sinh trường học, hãy chọn một chiến dịch để tham gia, sau đó điền thông tin của bạn."
+    },
+    {
+      "question": "Các chiến dịch Xanh này có ảnh hưởng gì đến việc giáo dục học sinh về môi trường?",
+      "answer": "Các chiến dịch Xanh không chỉ giúp học sinh tham gia vào những hoạt động thực tế mà còn là cơ hội để các em học hỏi về bảo vệ môi trường và thực hành các kỹ năng quan trọng. Những hoạt động này giúp học sinh hiểu rõ hơn về các vấn đề môi trường và cách giải quyết thông qua hành động thực tế, đồng thời phát triển các kỹ năng làm việc nhóm, tư duy sáng tạo và trách nhiệm xã hội."
+    },
+    {
+      "question": "Tôi có thể đóng góp vào dự án như thế nào?",
+      "answer": "Bạn có thể đóng góp vào dự án thông qua phần Quyên góp trên website của chúng tôi. Bạn có thể đóng góp tài chính bằng cách lựa chọn dự án đang cần quyên góp, sau đó quét mã QR và quyên góp để hỗ trợ dự án."
+    },
+    {
+      "question": "Làm thế nào để tôi theo dõi các hoạt động và câu chuyện thành công về bảo vệ môi trường từ các trường học?",
+      "answer": "Bạn có thể theo dõi các câu chuyện thành công và hoạt động bảo vệ môi trường qua phần Blog cộng đồng trên website của chúng tôi. Tại đây, các trường học sẽ chia sẻ câu chuyện về các sáng kiến “xanh”, như trồng cây, phân loại rác, và các hoạt động ngoài trời. Bạn cũng có thể bình luận, chia sẻ và tham gia vào các hoạt động để lan tỏa thông điệp bảo vệ môi trường."
+    },
+    {
+      "question": "GrowthEdu có kế hoạch mở rộng mô hình trường học xanh ra toàn quốc không?",
+      "answer": "Có, chúng tôi có kế hoạch mở rộng mô hình trường học xanh không chỉ trong khu vực mà còn ra toàn quốc. Mục tiêu của chúng tôi là xây dựng một mạng lưới trường học xanh, nơi mỗi học sinh có thể tham gia vào các hoạt động bảo vệ môi trường và truyền cảm hứng cho cộng đồng xung quanh."
+    },
+    {
+      "question": "Công nghệ nào sẽ được áp dụng trong dự án GrowthEdu?",
+      "answer": "Dự án GrowthEdu sẽ sử dụng công nghệ hiện đại để quản lý và tối ưu hóa các hoạt động trường học xanh. Điều này bao gồm việc sử dụng các công cụ thông minh để giảm thiểu rác thải, tiết kiệm tài nguyên và quản lý các chiến dịch bảo vệ môi trường. Công nghệ cũng sẽ giúp theo dõi và đánh giá hiệu quả của các hoạt động trường học xanh."
+    },
+    {
+      "question": "Lợi ích của việc tham gia dự án này đối với học sinh là gì?",
+      "answer": "Khi tham gia GrowthEdu, học sinh sẽ có cơ hội học hỏi và thực hành trực tiếp về bảo vệ môi trường thông qua các chương trình như phân loại rác, trồng cây xanh và các chiến dịch bảo vệ môi trường khác. Các em cũng sẽ phát triển kỹ năng làm việc nhóm, tư duy sáng tạo, và trách nhiệm xã hội. Hơn nữa, các em sẽ nhận được phần thưởng xứng đáng, khích lệ các em tham gia nhiều hơn vào các chiến dịch xanh."
+    }
+  ]
+}
