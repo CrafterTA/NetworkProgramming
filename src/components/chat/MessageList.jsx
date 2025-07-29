@@ -3,6 +3,8 @@ import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 
 const MessageList = ({ messages, currentUser, typing }) => {
+  console.log('MessageList received:', messages.length, 'messages:', messages);
+  
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const now = new Date();

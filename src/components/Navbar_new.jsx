@@ -52,14 +52,6 @@ const Navbar = () => {
             <Link to="/blog" className="nav-item">Blog học tập</Link>
             <a href="#about" className="nav-item">Về chúng tôi</a>
             <Link to="/instructors" className="nav-item">Giảng viên</Link>
-            
-            {/* Agent Chat Link - Only for agents/admins */}
-            {isAuthenticated() && user && (user.Role === 'agent' || user.Role === 'admin') && (
-              <Link to="/agent/chat" className="nav-item agent-link">
-                <i className="ri-customer-service-2-line"></i>
-                Hỗ trợ
-              </Link>
-            )}
           </div>
 
           {/* Auth Buttons */}
@@ -376,28 +368,6 @@ const Navbar = () => {
           .mobile-menu {
             display: block;
           }
-        }
-
-        .nav-item.agent-link {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-weight: 500;
-          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-        }
-
-        .nav-item.agent-link:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-          background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        }
-
-        .nav-item.agent-link i {
-          font-size: 1.1rem;
         }
 
         @media (max-width: 480px) {

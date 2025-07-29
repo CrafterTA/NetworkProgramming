@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ChatProvider } from './contexts/ChatContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AgentChat from './pages/AgentChat';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ChatWidget from './components/chat/ChatWidget';
 
 
 
@@ -61,20 +64,31 @@ function App() {
 
   return (
     <AuthProvider>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* Protected routes example - uncomment when you have courses page */}
-        {/* <Route path="/courses" element={
-          <ProtectedRoute>
-            <Courses />
-          </ProtectedRoute>
-        } /> */}
-      </Routes>
-     
-      <Footer />
+      <ChatProvider>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Agent Chat Route - Protected for agents/admins only */}
+          <Route path="/agent/chat" element={
+            <ProtectedRoute allowedRoles={['agent', 'admin']}>
+              <AgentChat />
+            </ProtectedRoute>
+          } />
+          
+          {/* Protected routes example - uncomment when you have courses page */}
+          {/* <Route path="/courses" element={
+            <ProtectedRoute>
+              <Courses />
+            </ProtectedRoute>
+          } /> */}
+        </Routes>
+       
+        <Footer />
+        <ChatWidget />
+      </ChatProvider>
     </AuthProvider>
   );
 }
