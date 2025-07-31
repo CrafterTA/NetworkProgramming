@@ -591,4 +591,66 @@ export const analyticsService = {
   }
 };
 
+// File Service
+export const fileService = {
+  async uploadFile(roomId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await api.post(`/files/upload/${roomId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      throw authService.handleError(error);
+    }
+  },
+
+  async downloadFile(fileId) {
+    try {
+      const response = await api.get(`/files/download/${fileId}`, {
+        responseType: 'blob', // Important for file downloads
+      });
+
+      return response;
+    } catch (error) {
+      throw authService.handleError(error);
+    }
+  },
+
+  // Helper function to get file download URL
+  getFileDownloadUrl(fileId) {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    return `${API_BASE_URL}/files/download/${fileId}?token=${token}`;
+  },
+
+  // Helper function to format file size
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  },
+
+  // Helper function to get file icon based on mime type
+  getFileIcon(mimeType) {
+    if (mimeType.startsWith('image/')) {
+      return 'ri-image-line';
+    } else if (mimeType === 'application/pdf') {
+      return 'ri-file-pdf-line';
+    } else if (mimeType.includes('word')) {
+      return 'ri-file-word-line';
+    } else if (mimeType === 'text/plain') {
+      return 'ri-file-text-line';
+    } else {
+      return 'ri-file-line';
+    }
+  }
+};
+
 export default api;

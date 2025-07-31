@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import FilePreview from './FilePreview';
+import FileMessage from './FileMessage';
 
 const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
   const [showFullTime, setShowFullTime] = useState(false);
@@ -16,18 +17,21 @@ const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
   };
 
   const renderMessageContent = () => {
-    switch (message.type) {
+    const messageType = message.message_type || message.type;
+    
+    switch (messageType) {
       case 'file':
         return (
-          <div className="file-message">
-            <FilePreview file={message.file} />
-            {message.content && (
+          <div className="file-message-wrapper">
+            <FileMessage file={message.file} message={message} />
+            {message.content && message.content !== `Đã gửi file: ${message.file?.original_name}` && (
               <p className="file-caption">{message.content}</p>
             )}
           </div>
         );
       
       case 'image':
+        // For legacy image handling or if image is sent as separate type
         return (
           <div className="image-message">
             <img 
@@ -83,7 +87,7 @@ const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
     }
   };
 
-  if (message.type === 'system') {
+  if (message.message_type === 'system' || message.type === 'system') {
     return (
       <div className="message-item system">
         {renderMessageContent()}

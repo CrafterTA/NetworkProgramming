@@ -12,7 +12,14 @@ class SocketService {
 
   connect(userType = 'user') {
     if (this.socket?.connected) {
+      console.log('🟢 Socket already connected, reusing connection');
       return this.socket;
+    }
+
+    // Disconnect existing socket if any
+    if (this.socket) {
+      console.log('🔄 Disconnecting existing socket before reconnection');
+      this.socket.disconnect();
     }
 
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
@@ -28,6 +35,8 @@ class SocketService {
       auth = { isGuest: true, guestId };
     }
 
+    console.log('🔌 Creating new socket connection to:', SOCKET_URL);
+
     // Create socket connection
     this.socket = io(SOCKET_URL, {
       auth,
@@ -37,6 +46,7 @@ class SocketService {
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+      forceNew: true, // Force new connection
     });
 
     this.setupEventListeners();
@@ -48,14 +58,19 @@ class SocketService {
 
     // Connection events
     this.socket.on('connect', () => {
-      // Add small delay to ensure socket.id is available
-      setTimeout(() => {
-        console.log('🟢 Socket connected:', this.socket.id || 'pending');
-        console.log('🔗 Socket transport:', this.socket.io.engine.transport.name);
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-        this.emit('socket_connected', { socketId: this.socket.id });
-      }, 100);
+      console.log('🟢 Socket connected:', this.socket.id || 'pending');
+      console.log('🔗 Socket transport:', this.socket.io.engine.transport.name);
+      this.isConnected = true;
+      this.reconnectAttempts = 0;
+      
+      // Additional verification
+      console.log('🔍 Connection verification:', {
+        isConnected: this.isConnected,
+        socketConnected: this.socket.connected,
+        socketId: this.socket.id
+      });
+      
+      this.emit('socket_connected', { socketId: this.socket.id });
     });
 
     this.socket.on('disconnect', (reason) => {
@@ -72,8 +87,19 @@ class SocketService {
 
     // Chat events
     this.socket.on('new_message', (data) => {
-      console.log('📩 New message received:', data);
+      console.log('📩 New message received via socket:', {
+        roomId: data.roomId,
+        messageType: data.message?.message_type,
+        hasFile: !!data.message?.file,
+        sender: data.message?.sender_name
+      });
       this.emit('new_message', data);
+    });
+
+    // File upload fallback event
+    this.socket.on('file_uploaded', (data) => {
+      console.log('📁 File uploaded event received:', data);
+      this.emit('file_uploaded', data);
     });
 
     this.socket.on('message_sent', (data) => {
@@ -177,14 +203,29 @@ class SocketService {
 
   // Room management
   joinRoom(roomId, userType = 'user') {
-    if (!this.socket || !this.isConnected) {
-      console.warn('Cannot join room: Socket not connected');
+    console.log(`🚪 Attempting to join room: ${roomId} as ${userType}`);
+    console.log(`🔍 Socket state check:`, {
+      hasSocket: !!this.socket,
+      isConnected: this.isConnected,
+      socketConnected: this.socket?.connected,
+      socketId: this.socket?.id
+    });
+
+    if (!this.socket) {
+      console.warn('❌ No socket instance available');
       return;
     }
 
+    // Use socket.connected instead of this.isConnected since it's more reliable
+    if (!this.socket.connected) {
+      console.warn('❌ Socket not connected, current state:', this.socket.connected);
+      return;
+    }
+
+    console.log(`🚪 Joining room: ${roomId} as ${userType}`);
     this.socket.emit('join_room', { roomId, userType }, (data) => {
       if (data?.success) {
-        // Successfully joined room
+        console.log(`✅ Successfully joined room: ${roomId}`);
       } else {
         console.error('Failed to join room:', data?.message);
       }
@@ -192,11 +233,12 @@ class SocketService {
   }
 
   leaveRoom(roomId) {
-    if (!this.socket || !this.isConnected) {
+    if (!this.socket || !this.socket.connected) {
       console.warn('Cannot leave room: Socket not connected');
       return;
     }
 
+    console.log(`🚪 Leaving room: ${roomId}`);
     this.socket.emit('leave_room', { roomId });
   }
 
@@ -271,11 +313,40 @@ class SocketService {
   // Connection management
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Manually disconnecting socket');
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
     }
+  }
+
+  // Test connectivity method
+  testConnection() {
+    return new Promise((resolve) => {
+      if (!this.socket || !this.socket.connected) {
+        console.log('🔍 Socket test: Not connected');
+        resolve(false);
+        return;
+      }
+      
+      console.log('🔍 Socket test: Connected, testing ping...');
+      const startTime = Date.now();
+      
+      this.socket.emit('ping', { timestamp: startTime }, (response) => {
+        const endTime = Date.now();
+        const latency = endTime - startTime;
+        
+        console.log('🏓 Socket test: Ping response received:', response);
+        console.log(`⚡ Socket test: Latency ${latency}ms`);
+        
+        resolve(response?.success === true);
+      });
+
+      // Timeout fallback
+      setTimeout(() => {
+        console.log('❌ Socket test: Ping timeout');
+        resolve(false);
+      }, 5000);
+    });
   }
 
   reconnect() {

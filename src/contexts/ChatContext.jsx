@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { chatService, guestService } from '../services/api';
+import { chatService, guestService, fileService } from '../services/api';
 import socketService from '../services/socket';
 import { toast } from 'react-toastify';
 
@@ -33,9 +33,10 @@ export const ChatProvider = ({ children }) => {
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   
-  // Refs for cleanup
+  // Refs for cleanup and realtime access
   const typingTimerRef = useRef(null);
   const messagePollingRef = useRef(null);
+  const activeRoomRef = useRef(null);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -49,30 +50,22 @@ export const ChatProvider = ({ children }) => {
     };
   }, [isAuthenticated, user]);
 
+  // Keep activeRoomRef in sync with activeRoom state
   useEffect(() => {
-    // Initialize socket listeners for basic events (before authentication)
-    setupBasicListeners();
-  }, []); // Empty dependency array - will setup once
+    activeRoomRef.current = activeRoom;
+  }, [activeRoom]);
 
-  const setupBasicListeners = () => {
-    // Connection events only
-    socketService.on('socket_connected', () => {
-      console.log('🟢 ChatContext - Socket connected');
-      setIsSocketConnected(true);
-    });
-
-    socketService.on('socket_disconnected', () => {
-      console.log('🔴 ChatContext - Socket disconnected');
-      setIsSocketConnected(false);
-    });
-
-    // Error events
-    socketService.on('socket_error', (error) => {
-      console.error('Socket error:', error);
-    });
+  useEffect(() => {
+    // Setup all socket listeners once on mount
+    console.log('🔧 Setting up all socket listeners once on mount...');
+    removeSocketListeners();
+    setupSocketListeners();
     
-    console.log('✅ Basic socket listeners setup completed');
-  };
+    return () => {
+      console.log('🧹 Cleaning up socket listeners on unmount');
+      removeSocketListeners();
+    };
+  }, []); // Empty dependency array - will setup once
 
   const initializeChat = async () => {
     try {
@@ -138,7 +131,6 @@ export const ChatProvider = ({ children }) => {
 
   const setupSocketListeners = () => {
     console.log('🔧 Setting up socket listeners...');
-    console.log('🔧 handleNewMessage function exists:', typeof handleNewMessage === 'function');
     
     // Connection events
     socketService.on('socket_connected', () => {
@@ -151,9 +143,17 @@ export const ChatProvider = ({ children }) => {
       setIsSocketConnected(false);
     });
 
-    // Message events
+    // Message events - direct function calls (will use latest closure)
     socketService.on('new_message', (data) => {
       console.log('🎯 new_message listener called in ChatContext with data:', data);
+      console.log('🎯 Message type:', data?.message?.message_type);
+      
+      // Special logging for file messages
+      if (data?.message?.message_type === 'file') {
+        console.log('📁 FILE MESSAGE DETECTED via new_message event!');
+        console.log('📁 File details:', data.message.file);
+      }
+      
       handleNewMessage(data);
     });
 
@@ -161,45 +161,24 @@ export const ChatProvider = ({ children }) => {
       handleMessageSent(data);
     });
 
-    // Typing events
-    socketService.on('user_typing', (data) => {
-      handleUserTyping(data);
+    // File upload events
+    socketService.on('file_uploaded', (data) => {
+      console.log('📁 File uploaded event received, reloading messages for room:', data.roomId);
+      if (activeRoomRef.current?.room_id === data.roomId) {
+        loadMessages(data.roomId, 1);
+      }
     });
 
-    // Room events
-    socketService.on('room_created', (data) => {
-      handleRoomCreated(data);
-    });
-
-    socketService.on('new_room_created', (data) => {
-      handleNewRoomCreated(data);
-    });
-
-    socketService.on('room_updated', (data) => {
-      handleRoomUpdated(data);
-    });
-
-    socketService.on('room_closed', (data) => {
-      handleRoomClosed(data);
-    });
-
-    socketService.on('agent_assigned', (data) => {
-      handleAgentAssigned(data);
-    });
-
-    // User events
-    socketService.on('user_joined', (data) => {
-      handleUserJoined(data);
-    });
-
-    socketService.on('user_left', (data) => {
-      handleUserLeft(data);
-    });
-
-    // Notification events
-    socketService.on('new_notification', (data) => {
-      handleNewNotification(data);
-    });
+    // Other events
+    socketService.on('user_typing', handleUserTyping);
+    socketService.on('room_created', handleRoomCreated);
+    socketService.on('new_room_created', handleNewRoomCreated);
+    socketService.on('room_updated', handleRoomUpdated);
+    socketService.on('room_closed', handleRoomClosed);
+    socketService.on('agent_assigned', handleAgentAssigned);
+    socketService.on('user_joined', handleUserJoined);
+    socketService.on('user_left', handleUserLeft);
+    socketService.on('new_notification', handleNewNotification);
 
     // Error events
     socketService.on('socket_error', (error) => {
@@ -329,15 +308,15 @@ export const ChatProvider = ({ children }) => {
     }));
   }, []);
 
-  // Socket event handlers
+  // Socket event handlers - update ref when they change
   const handleNewMessage = useCallback((data) => {
     console.log('🔔 handleNewMessage received:', data);
     console.log('🔔 Current user role:', user?.role);
-    console.log('🔔 Active room:', activeRoom?.room_id);
+    console.log('🔔 Active room from ref:', activeRoomRef.current?.room_id);
     const { message, roomId } = data;
     
     // Add message to current room if it's active
-    if (activeRoom?.room_id === roomId) {
+    if (activeRoomRef.current?.room_id === roomId) {
       console.log('📨 Adding message to active room:', roomId, message);
       
       // Remove any temp message from same sender if exists
@@ -391,7 +370,7 @@ export const ChatProvider = ({ children }) => {
       
       markRoomAsRead(roomId);
     } else {
-      console.log('📨 Message for different room:', roomId, 'current room:', activeRoom?.room_id);
+      console.log('📨 Message for different room:', roomId, 'current room:', activeRoomRef.current?.room_id);
       // Update unread count
       setUnreadCounts(prev => ({
         ...prev,
@@ -416,7 +395,7 @@ export const ChatProvider = ({ children }) => {
     
     // Force re-render by updating a timestamp
     setLastUpdateTime(Date.now());
-  }, [activeRoom, user, markRoomAsRead]);
+  }, [user, markRoomAsRead]);
 
   const handleMessageSent = useCallback((data) => {
     const { message } = data;
@@ -608,24 +587,26 @@ export const ChatProvider = ({ children }) => {
       
       // Ensure socket is connected
       if (!socketService.socket?.connected) {
-        console.log('🔌 Socket not connected, connecting...');
+        console.log('🔌 Socket not connected, reconnecting...');
         if (user) {
           socketService.connect('user');
         } else if (isGuestMode) {
           socketService.connect('guest');
         }
         
-        // Wait for connection
+        // Wait for connection with more attempts
         let attempts = 0;
-        while (!socketService.socket?.connected && attempts < 30) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        while (!socketService.socket?.connected && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 200));
           attempts++;
+          console.log(`🔄 Waiting for socket connection... attempt ${attempts}/50`);
         }
       }
       
       if (!socketService.socket?.connected) {
-        console.error('❌ Socket connection failed for joinRoom');
-        throw new Error('Không thể kết nối socket');
+        console.error('❌ Socket connection failed for joinRoom after 50 attempts');
+        // Don't throw error, just warn - continue without socket for now
+        console.warn('⚠️ Continuing without socket connection');
       }
       
       const response = await chatService.getRoomDetails(roomId);
@@ -636,8 +617,43 @@ export const ChatProvider = ({ children }) => {
         console.log('✅ Set active room:', room.room_id);
         
         // Join socket room
-        console.log('🚪 Joining room via socket:', roomId);
-        socketService.joinRoom(roomId, user?.role || 'customer');
+        console.log('🚪 Attempting to join room via socket:', roomId);
+        
+        // Wait a bit more for socket to be fully ready
+        let socketReady = false;
+        let attempts = 0;
+        while (!socketReady && attempts < 10) {
+          // Check socket.connected directly instead of socketService.isConnected
+          if (socketService.socket?.connected) {
+            socketReady = true;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 200));
+          attempts++;
+          console.log(`🔄 Waiting for socket to be ready... attempt ${attempts}/10`);
+        }
+        
+        if (socketReady) {
+          socketService.joinRoom(roomId, user?.role || 'customer');
+          console.log('✅ Successfully joined socket room:', roomId);
+          
+          // Test socket connection after joining
+          setTimeout(async () => {
+            if (socketService.testConnection) {
+              const pingResult = await socketService.testConnection();
+              console.log('🏓 Post-join ping test result:', pingResult);
+            }
+          }, 1000);
+        } else {
+          console.warn('⚠️ Socket not ready, will retry joining room later');
+          // Retry joining room after a short delay
+          setTimeout(() => {
+            if (socketService.socket?.connected) {
+              console.log('🔄 Retrying to join room:', roomId);
+              socketService.joinRoom(roomId, user?.role || 'customer');
+            }
+          }, 2000);
+        }
         
         // Load messages
         await loadMessages(roomId);
@@ -998,6 +1014,94 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const uploadFile = async (roomId, file) => {
+    try {
+      setIsLoading(true);
+      
+      // Validate file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        throw new Error('File quá lớn. Kích thước tối đa là 10MB.');
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png', 
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain'
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error('Loại file không được hỗ trợ.');
+      }
+
+      // Upload file
+      const response = await fileService.uploadFile(roomId, file);
+      
+      if (response.success) {
+        console.log('✅ File upload response received:', {
+          success: response.success,
+          fileName: response.data?.file?.original_name,
+          messageId: response.data?.message?.message_id,
+          roomId: roomId
+        });
+        
+        // Ensure we are still in the room for real-time updates
+        if (activeRoom?.room_id === roomId) {
+          console.log('🔄 Ensuring socket connection for real-time updates...');
+          
+          // Check and reconnect socket if needed
+          if (!socketService.socket?.connected) {
+            console.log('🔌 Reconnecting socket for real-time updates...');
+            if (user) {
+              socketService.connect('user');
+            } else if (isGuestMode) {
+              socketService.connect('guest');
+            }
+            
+            // Wait a bit for connection
+            setTimeout(() => {
+              if (socketService.socket?.connected) {
+                console.log('🚪 Re-joining room after reconnection:', roomId);
+                socketService.joinRoom(roomId, user?.role || 'customer');
+              }
+            }, 1000);
+          } else {
+            console.log('🔄 Re-joining room to ensure real-time updates:', roomId);
+            socketService.joinRoom(roomId, user?.role || 'customer');
+          }
+        }
+        
+        toast.success('Upload file thành công!');
+        
+        // The file message should be handled by socket event 'new_message'
+        // But as a fallback, reload messages after a short delay if socket doesn't work
+        setTimeout(async () => {
+          if (activeRoom?.room_id === roomId) {
+            console.log('🔄 Fallback: Reloading messages to ensure file appears');
+            await loadMessages(roomId, 1);
+          }
+        }, 2000);
+        
+        return response.data;
+      } else {
+        throw new Error(response.message || 'Upload file thất bại');
+      }
+    } catch (error) {
+      console.error('Upload file error:', error);
+      const errorMessage = error.message || 'Không thể upload file';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Context value
   const value = {
     // State
@@ -1031,21 +1135,13 @@ export const ChatProvider = ({ children }) => {
     loadMessages,
     endGuestSession,
     connectGuestSocket,
+    uploadFile,
     
     // Utilities
     setActiveRoom,
     setMessages,
     setRooms
   };
-
-  // Setup socket listeners after all handlers are defined
-  useEffect(() => {
-    if (typeof handleNewMessage === 'function' && typeof handleMessageSent === 'function') {
-      // Re-setting up socket listeners with fresh handlers
-      removeSocketListeners();
-      setupSocketListeners();
-    }
-  }, [handleNewMessage, handleMessageSent]);
 
   return (
     <ChatContext.Provider value={value}>

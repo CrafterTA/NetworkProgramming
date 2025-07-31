@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
+import FileMessage from './FileMessage';
 
 const MessageList = ({ messages, currentUser, typing }) => {
   const messagesEndRef = useRef(null);

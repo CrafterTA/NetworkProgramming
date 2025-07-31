@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload Real-time Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            background: #f9f9f9;
+        }
+        .log { 
+            background: #222; 
+            color: #0f0; 
+            padding: 15px; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            white-space: pre-wrap; 
+            max-height: 300px; 
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        input[type="file"] { 
+            margin: 10px 0; 
+            padding: 5px;
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        .events {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 File Upload Real-time Test</h1>
+        
+        <div class="test-section">
+            <h3>Connection Status</h3>
+            <div id="status" class="status disconnected">Disconnected</div>
+            <button onclick="testConnection()">Test Connection</button>
+            <button onclick="connectSocket()">Connect</button>
+            <button onclick="disconnectSocket()">Disconnect</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Authentication</h3>
+            <label>Token:</label><br>
+            <textarea id="tokenInput" placeholder="Paste your JWT token here" style="width: 100%; height: 60px; margin: 5px 0;"></textarea>
+            <button onclick="setToken()">Set Token</button>
+            <button onclick="getTokenFromLocalStorage()">Get Token from LocalStorage</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Room Operations</h3>
+            <label>Room ID:</label>
+            <input type="text" id="roomIdInput" placeholder="Enter room ID" style="width: 300px;">
+            <button onclick="joinRoom()">Join Room</button>
+            <button onclick="leaveRoom()">Leave Room</button>
+        </div>
+
+        <div class="test-section">
+            <h3>File Upload Test</h3>
+            <input type="file" id="fileInput" accept="image/*,application/pdf,.doc,.docx,.txt">
+            <button onclick="uploadFile()" id="uploadBtn">Upload File</button>
+            <div id="uploadStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Real-time Events Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="eventLog" class="events"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Socket Debug Info</h3>
+            <div id="socketInfo" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        let currentToken = null;
+        let currentRoomId = null;
+
+        function log(message) {
+            const now = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('eventLog');
+            logElement.textContent += `[${now}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(connected) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = connected ? 'Connected' : 'Disconnected';
+            statusEl.className = `status ${connected ? 'connected' : 'disconnected'}`;
+        }
+
+        function updateSocketInfo() {
+            const info = document.getElementById('socketInfo');
+            if (socket) {
+                info.textContent = `Socket ID: ${socket.id || 'null'}
+Connected: ${socket.connected}
+Rooms: ${JSON.stringify(socket.rooms)}
+Token: ${currentToken ? 'Set' : 'Not set'}
+Current Room: ${currentRoomId || 'None'}`;
+            } else {
+                info.textContent = 'Socket: null';
+            }
+        }
+
+        function connectSocket() {
+            if (socket) {
+                socket.disconnect();
+            }
+
+            const token = currentToken || localStorage.getItem('accessToken') || localStorage.getItem('token');
+            
+            if (!token) {
+                log('❌ No token available. Please set a token first.');
+                return;
+            }
+
+            log('🔌 Connecting socket...');
+            
+            socket = io('http://localhost:5000', {
+                auth: {
+                    token: token,
+                    isGuest: false
+                },
+                transports: ['websocket', 'polling']
+            });
+
+            socket.on('connect', () => {
+                log('✅ Socket connected: ' + socket.id);
+                updateStatus(true);
+                updateSocketInfo();
+            });
+
+            socket.on('disconnect', (reason) => {
+                log('🔌 Socket disconnected: ' + reason);
+                updateStatus(false);
+                updateSocketInfo();
+            });
+
+            socket.on('connect_error', (error) => {
+                log('❌ Connection error: ' + error.message);
+                updateStatus(false);
+            });
+
+            // File upload events
+            socket.on('new_message', (data) => {
+                log('📨 NEW_MESSAGE event received:');
+                log('   Room: ' + data.roomId);
+                log('   Message Type: ' + data.message?.message_type);
+                log('   Content: ' + (data.message?.content || '').substring(0, 50));
+                if (data.message?.message_type === 'file') {
+                    log('🎯 FILE MESSAGE DETECTED! Real-time working!');
+                }
+            });
+
+            socket.on('file_uploaded', (data) => {
+                log('📁 FILE_UPLOADED event received:');
+                log('   Room: ' + data.roomId);
+                log('   File: ' + JSON.stringify(data.file));
+                log('🎯 FILE UPLOAD EVENT DETECTED! Real-time working!');
+            });
+
+            // Other events
+            socket.on('room_info', (data) => {
+                log('🏠 Room info: ' + JSON.stringify(data, null, 2));
+            });
+
+            socket.on('user_joined', (data) => {
+                log('👤 User joined: ' + data.userName);
+            });
+
+            socket.on('error', (error) => {
+                log('❌ Socket error: ' + JSON.stringify(error));
+            });
+        }
+
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                updateStatus(false);
+                updateSocketInfo();
+                log('🔌 Socket manually disconnected');
+            }
+        }
+
+        function testConnection() {
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected');
+                return;
+            }
+
+            log('🏓 Testing connection with ping...');
+            const startTime = Date.now();
+            
+            socket.emit('ping', { timestamp: startTime }, (response) => {
+                const latency = Date.now() - startTime;
+                log('🏓 Ping response: ' + JSON.stringify(response));
+                log(`⚡ Latency: ${latency}ms`);
+            });
+        }
+
+        function setToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (token) {
+                currentToken = token;
+                localStorage.setItem('testToken', token);
+                log('🔑 Token set successfully');
+            } else {
+                log('❌ Please enter a token');
+            }
+        }
+
+        function getTokenFromLocalStorage() {
+            const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+            if (token) {
+                currentToken = token;
+                document.getElementById('tokenInput').value = token;
+                log('🔑 Token retrieved from localStorage');
+            } else {
+                log('❌ No token found in localStorage');
+            }
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('roomIdInput').value.trim();
+            if (!roomId) {
+                log('❌ Please enter a room ID');
+                return;
+            }
+            
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected');
+                return;
+            }
+
+            currentRoomId = roomId;
+            log('🚪 Joining room: ' + roomId);
+            
+            socket.emit('join_room', { roomId: roomId });
+            updateSocketInfo();
+        }
+
+        function leaveRoom() {
+            if (!currentRoomId) {
+                log('❌ No room to leave');
+                return;
+            }
+            
+            if (!socket || !socket.connected) {
+                log('❌ Socket not connected');
+                return;
+            }
+
+            log('🚪 Leaving room: ' + currentRoomId);
+            socket.emit('leave_room', { roomId: currentRoomId });
+            currentRoomId = null;
+            updateSocketInfo();
+        }
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('❌ Please select a file');
+                return;
+            }
+            
+            if (!currentRoomId) {
+                log('❌ Please join a room first');
+                return;
+            }
+
+            const token = currentToken || localStorage.getItem('accessToken') || localStorage.getItem('token');
+            if (!token) {
+                log('❌ No token available');
+                return;
+            }
+
+            log('📤 Uploading file: ' + file.name + ' (' + file.size + ' bytes)');
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('uploadStatus').textContent = 'Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch(`http://localhost:5000/api/files/upload/${currentRoomId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    log('✅ File uploaded successfully!');
+                    log('📁 File info: ' + JSON.stringify(result.data.file));
+                    log('💬 Message ID: ' + result.data.message?.message_id);
+                    document.getElementById('uploadStatus').textContent = 'Upload successful! Waiting for real-time events...';
+                } else {
+                    log('❌ Upload failed: ' + result.message);
+                    document.getElementById('uploadStatus').textContent = 'Upload failed: ' + result.message;
+                }
+            } catch (error) {
+                log('❌ Upload error: ' + error.message);
+                document.getElementById('uploadStatus').textContent = 'Upload error: ' + error.message;
+            } finally {
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('eventLog').textContent = '';
+        }
+
+        // Auto-update socket info every 2 seconds
+        setInterval(updateSocketInfo, 2000);
+
+        // Try to get token on page load
+        window.onload = function() {
+            getTokenFromLocalStorage();
+            log('🧪 File Upload Real-time Test Page Loaded');
+            log('📋 Instructions:');
+            log('1. Make sure you have a valid token (check main app localStorage)');
+            log('2. Connect socket');
+            log('3. Join a room (get room ID from main app)');
+            log('4. Upload a file and watch for real-time events');
+        };
+    </script>
+</body>
+</html>
