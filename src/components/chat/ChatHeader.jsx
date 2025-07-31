@@ -110,7 +110,7 @@ const ChatHeader = ({
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .chat-header {
           display: flex;
           align-items: center;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChat } from '../../contexts/ChatContext';
 
 const GuestChatSimulator = () => {
   const { 
@@ -10,7 +10,7 @@ const GuestChatSimulator = () => {
     currentRoom,
     guestSession,
     updateGuestActivity
-  } = useChatContext();
+  } = useChat();
 
   const [isConnected, setIsConnected] = useState(false);
   const [guestInfo, setGuestInfo] = useState({

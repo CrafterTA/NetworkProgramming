@@ -1,5 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import { AuthProvider } from './contexts/AuthContext';
 import { ChatProvider } from './contexts/ChatContext';
 import Home from './pages/Home';
@@ -98,6 +101,24 @@ function App() {
         {/* Only show Footer and ChatWidget for non-agent routes */}
         {!isAgentRoute && <Footer />}
         {!isAgentRoute && <ChatWidget />}
+        
+        {/* Toast Notifications */}
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+          toastStyle={{
+            fontSize: '14px',
+            fontFamily: 'inherit'
+          }}
+        />
       </ChatProvider>
     </AuthProvider>
   );

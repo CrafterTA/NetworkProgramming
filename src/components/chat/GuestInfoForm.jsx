@@ -179,7 +179,7 @@ const GuestInfoForm = ({ onSubmit, onCancel, isLoading = false }) => {
         </p>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .guest-form-container {
           display: flex;
           flex-direction: column;

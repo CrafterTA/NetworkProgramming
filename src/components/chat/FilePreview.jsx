@@ -63,7 +63,7 @@ const FilePreview = ({ file, onDownload, compact = false }) => {
           <i className="ri-download-line"></i>
         </div>
 
-        <style jsx>{`
+        <style>{`
           .file-preview.compact {
             display: flex;
             align-items: center;
@@ -182,7 +182,7 @@ const FilePreview = ({ file, onDownload, compact = false }) => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .file-preview {
           display: flex;
           flex-direction: column;

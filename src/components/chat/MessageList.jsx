@@ -1,10 +1,54 @@
-import React from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
 import TypingIndicator from './TypingIndicator';
 
 const MessageList = ({ messages, currentUser, typing }) => {
-  console.log('MessageList received:', messages.length, 'messages:', messages);
-  
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+
+  console.log('🔄 MessageList re-rendering with:', messages.length, 'messages');
+  console.log('📝 Messages array:', messages.map(m => ({ id: m.id, content: m.content?.slice(0, 20), created_at: m.created_at })));
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end' 
+      });
+    }
+  };
+
+  const handleScroll = () => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isScrolledUp = scrollTop < scrollHeight - clientHeight - 100;
+    
+    // Detect if user is manually scrolling
+    if (isScrolledUp) {
+      setIsUserScrolling(true);
+    } else {
+      setIsUserScrolling(false);
+    }
+  };
+
+  // Smart auto-scroll: only scroll if user is not manually scrolling up
+  useEffect(() => {
+    const isNewMessage = messages.length > lastMessageCount;
+    
+    if (!isUserScrolling || isNewMessage) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      
+      setLastMessageCount(messages.length);
+      return () => clearTimeout(timer);
+    }
+    
+    setLastMessageCount(messages.length);
+  }, [messages, isUserScrolling, lastMessageCount]);
   const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -26,7 +70,8 @@ const MessageList = ({ messages, currentUser, typing }) => {
     const groups = {};
     
     messages.forEach(message => {
-      const dateKey = new Date(message.timestamp).toDateString();
+      const timestamp = message.timestamp || message.created_at;
+      const dateKey = new Date(timestamp).toDateString();
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -47,7 +92,7 @@ const MessageList = ({ messages, currentUser, typing }) => {
           <p>Hãy bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn đầu tiên</p>
         </div>
 
-        <style jsx>{`
+        <style>{`
           .empty-messages {
             flex: 1;
             display: flex;
@@ -83,12 +128,16 @@ const MessageList = ({ messages, currentUser, typing }) => {
   }
 
   return (
-    <div className="message-list">
+    <div 
+      className="message-list"
+      ref={messagesContainerRef}
+      onScroll={handleScroll}
+    >
       {Object.entries(messageGroups).map(([dateKey, groupMessages]) => (
         <div key={dateKey} className="message-group">
           {/* Date Separator */}
           <div className="date-separator">
-            <span>{formatDate(groupMessages[0].timestamp)}</span>
+            <span>{formatDate(groupMessages[0].timestamp || groupMessages[0].created_at)}</span>
           </div>
 
           {/* Messages */}
@@ -96,7 +145,11 @@ const MessageList = ({ messages, currentUser, typing }) => {
             <MessageItem
               key={message.id || index}
               message={message}
-              isOwn={message.sender_id === currentUser?.UserID}
+              isOwn={
+                String(message.sender_id) === String(currentUser?.user_id) ||
+                String(message.sender_id) === String(currentUser?.UserID) ||
+                String(message.sender_id) === String(currentUser?.id)
+              }
               showAvatar={
                 index === 0 || 
                 groupMessages[index - 1].sender_id !== message.sender_id
@@ -104,7 +157,7 @@ const MessageList = ({ messages, currentUser, typing }) => {
               showTime={
                 index === groupMessages.length - 1 ||
                 groupMessages[index + 1].sender_id !== message.sender_id ||
-                new Date(groupMessages[index + 1].timestamp) - new Date(message.timestamp) > 300000 // 5 minutes
+                new Date(groupMessages[index + 1].timestamp || groupMessages[index + 1].created_at) - new Date(message.timestamp || message.created_at) > 300000 // 5 minutes
               }
             />
           ))}
@@ -113,8 +166,11 @@ const MessageList = ({ messages, currentUser, typing }) => {
 
       {/* Typing Indicator */}
       {typing && <TypingIndicator user={typing} />}
+      
+      {/* Scroll anchor */}
+      <div ref={messagesEndRef} />
 
-      <style jsx>{`
+      <style>{`
         .message-list {
           display: flex;
           flex-direction: column;

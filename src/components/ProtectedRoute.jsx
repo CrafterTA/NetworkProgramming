@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
             Đang kiểm tra đăng nhập...
           </p>
         </div>
-        <style jsx>{`
+        <style>{`
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -45,13 +45,14 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   }
 
   // Redirect to login if not authenticated
-  if (!isAuthenticated()) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
   // Check role-based access if allowedRoles is specified
   if (allowedRoles.length > 0 && user) {
-    if (!allowedRoles.includes(user.Role)) {
+    const userRole = user.role || user.Role; // Support both cases
+    if (!allowedRoles.includes(userRole)) {
       return (
         <div style={{
           minHeight: '100vh',

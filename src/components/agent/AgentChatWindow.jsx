@@ -1,18 +1,37 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChat } from '../../contexts/ChatContext';
 import AgentMessageList from './AgentMessageList';
 import AgentMessageInput from './AgentMessageInput';
 import CustomerInfo from './CustomerInfo';
 import QuickActions from './QuickActions';
 
-const AgentChatWindow = ({ room, messages, currentAgent }) => {
+const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
   const { 
     sendMessage, 
     uploadFile, 
-    sendTyping, 
-    submitRating,
-    leaveRoom 
-  } = useChatContext();
+    messages: allMessages, 
+    isLoading,
+    typingUsers,
+    markMessageAsRead,
+    updateRoomStatus,
+    closeRoom,
+    lastUpdateTime
+  } = useChat();
+
+  // Use roomMessages prop if provided, otherwise filter from all messages
+  const displayMessages = roomMessages || allMessages.filter(msg => 
+    msg.room_id === room?.room_id || msg.room_id === room?.id
+  );
+
+  // Debug messages
+  console.log('🎯 AgentChatWindow debug:', {
+    roomMessagesCount: roomMessages?.length,
+    allMessagesCount: allMessages?.length,
+    displayMessagesCount: displayMessages?.length,
+    roomId: room?.room_id || room?.id,
+    roomMessages: roomMessages?.slice(0, 2),
+    displayMessages: displayMessages?.slice(0, 2)
+  });
 
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -23,7 +42,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
   const handleTypingStart = () => {
     if (!isTyping) {
       setIsTyping(true);
-      sendTyping(true);
+      // sendTyping(true);
     }
 
     // Clear existing timeout
@@ -34,7 +53,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
     // Set new timeout to stop typing
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false);
-      sendTyping(false);
+      // sendTyping(false);
     }, 2000);
   };
 
@@ -43,7 +62,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
       clearTimeout(typingTimeoutRef.current);
     }
     setIsTyping(false);
-    sendTyping(false);
+    // sendTyping(false);
   };
 
   const handleSendMessage = (content, type = 'text', fileData = null) => {
@@ -112,8 +131,8 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
             onClick={() => setShowCustomerInfo(true)}
           >
             <img 
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
-              alt={room.customer?.name}
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer_name || room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
+              alt={room.customer_name || room.customer?.name || 'Guest'}
             />
             <div 
               className="status-indicator"
@@ -122,7 +141,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
           </button>
 
           <div className="customer-details">
-            <h3>{room.customer?.name || 'Khách vãng lai'}</h3>
+            <h3>{room.customer_name || room.customer?.name || 'Khách vãng lai'}</h3>
             <div className="customer-meta">
               <span 
                 className="status-badge"
@@ -130,8 +149,8 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
               >
                 {getStatusText(room.status)}
               </span>
-              {room.customer?.email && (
-                <span className="email">{room.customer.email}</span>
+              {(room.customer_email || room.customer?.email) && (
+                <span className="email">{room.customer_email || room.customer?.email}</span>
               )}
             </div>
           </div>
@@ -186,7 +205,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
       {/* Chat Messages */}
       <div className="chat-content">
         <AgentMessageList 
-          messages={messages}
+          messages={displayMessages}
           currentAgent={currentAgent}
           room={room}
         />
@@ -213,7 +232,7 @@ const AgentChatWindow = ({ room, messages, currentAgent }) => {
         />
       )}
 
-      <style jsx>{`
+      <style>{`
         .agent-chat-window {
           flex: 1;
           display: flex;

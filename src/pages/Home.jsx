@@ -8,6 +8,7 @@ import Features from '../components/Features';
 import Services from '../components/Services';
 import Pricing from '../components/Pricing';
 import BannerGallery from '../components/BannerGallery';
+import ChatWidget from '../components/chat/ChatWidget';
 
 
 
@@ -26,7 +27,7 @@ const Home = () => {
       <Services />
       <Pricing />
       <BannerGallery />
-      
+      <ChatWidget />
     </>
   );
 };

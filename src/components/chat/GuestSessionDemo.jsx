@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import React, { useState, useEffect } from 'react';
+import { useChat } from '../../contexts/ChatContext';
 
 const GuestSessionDemo = () => {
   const { 
@@ -8,7 +8,7 @@ const GuestSessionDemo = () => {
     updateGuestActivity, 
     handleGuestDisconnect,
     messages 
-  } = useChatContext();
+  } = useChat();
   
   const [sessionInfo, setSessionInfo] = useState(null);
 

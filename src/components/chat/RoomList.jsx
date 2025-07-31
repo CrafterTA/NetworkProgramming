@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChat } from '../../contexts/ChatContext';
 
 const RoomList = ({ onRoomSelect, selectedRoomId }) => {
-  const { rooms, joinRoom, leaveRoom } = useChatContext();
+  const { rooms, joinRoom, leaveRoom } = useChat();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all'); // all, active, waiting, closed
 
@@ -217,7 +217,7 @@ const RoomList = ({ onRoomSelect, selectedRoomId }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .room-list {
           display: flex;
           flex-direction: column;

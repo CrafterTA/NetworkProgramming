@@ -162,7 +162,7 @@ const AgentHeader = ({
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .agent-header {
           display: flex;
           align-items: center;

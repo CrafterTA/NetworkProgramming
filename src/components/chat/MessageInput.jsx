@@ -1,8 +1,8 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import { useChat } from '../../contexts/ChatContext';
 
-const MessageInput = ({ roomId, disabled = false }) => {
-  const { sendMessage, uploadFile } = useChatContext();
+const MessageInput = ({ roomId, disabled = false, placeholder = 'Nhập tin nhắn...', onFileUpload }) => {
+  const { sendMessage, uploadFile } = useChat();
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -33,7 +33,7 @@ const MessageInput = ({ roomId, disabled = false }) => {
     }
 
     try {
-      await sendMessage(roomId, messageText);
+      await sendMessage(messageText); // Remove roomId parameter, let ChatContext handle it
     } catch (error) {
       console.error('Failed to send message:', error);
       // Restore message on error
@@ -179,7 +179,7 @@ const MessageInput = ({ roomId, disabled = false }) => {
               adjustTextareaHeight();
             }}
             onKeyDown={handleKeyPress}
-            placeholder={disabled ? "Đang kết nối..." : "Nhập tin nhắn..."}
+            placeholder={disabled ? "Đang kết nối..." : placeholder}
             disabled={disabled}
             rows={1}
             className="message-textarea"
@@ -205,7 +205,7 @@ const MessageInput = ({ roomId, disabled = false }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .message-input-container {
           position: relative;
           border-top: 1px solid #e5e7eb;

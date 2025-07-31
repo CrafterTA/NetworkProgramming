@@ -6,9 +6,39 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
+
+  // Debug props với chi tiết hơn
+  console.log('🎯 AgentMessageList detailed debug:', {
+    messagesCount: messages?.length,
+    messagesType: typeof messages,
+    isArray: Array.isArray(messages),
+    roomId: room?.room_id || room?.id,
+    roomObject: room,
+    firstMessage: messages?.[0],
+    allMessages: messages
+  });
+
+  // Get customer name from room object - handle both structures
+  const getCustomerName = () => {
+    return room?.customer_name || room?.customer?.name || 'Khách vãng lai';
+  };
+
+  // Get customer info for avatar
+  const getCustomerInfo = () => {
+    const name = getCustomerName();
+    const email = room?.customer_email || room?.customer?.email;
+    return { name, email };
+  };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end' 
+      });
+    }
   };
 
   const handleScroll = () => {
@@ -17,11 +47,31 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
     const isScrolledUp = scrollTop < scrollHeight - clientHeight - 100;
     setShowScrollButton(isScrolledUp);
+    
+    // Detect if user is manually scrolling
+    if (isScrolledUp) {
+      setIsUserScrolling(true);
+    } else {
+      setIsUserScrolling(false);
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Only auto-scroll if user is not manually scrolling up
+    // or if this is a new message (message count increased)
+    const isNewMessage = messages.length > lastMessageCount;
+    
+    if (!isUserScrolling || isNewMessage) {
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      
+      setLastMessageCount(messages.length);
+      return () => clearTimeout(timer);
+    }
+    
+    setLastMessageCount(messages.length);
+  }, [messages, isUserScrolling, lastMessageCount]);
 
   const formatTime = (dateString) => {
     try {
@@ -36,13 +86,25 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
   };
 
   const isAgent = (message) => {
-    return message.sender?.role === 'agent' || message.sender?.role === 'admin';
+    return message.sender_type === 'agent' || message.sender_type === 'admin';
   };
 
   const renderMessage = (message, index) => {
-    const isCurrentAgent = message.sender?.id === currentAgent?.UserID;
-    const isAgentMessage = isAgent(message);
-    const isSystemMessage = message.type === 'system';
+    // Simplified logic for message classification
+    const isSystemMessage = message.message_type === 'system' || message.sender_type === 'system';
+    
+    // Simplified classification
+    const isCurrentAgent = (
+      message.sender_id?.toString() === currentAgent?.user_id?.toString() &&
+      (message.sender_type === 'agent' || message.sender_type === 'user')
+    );
+    
+    // Agent message: from any agent (including current agent)
+    const isAgentMessage = message.sender_type === 'agent' || 
+                          (message.sender_type === 'user' && message.sender_id?.toString() === currentAgent?.user_id?.toString());
+    
+    // Customer message: guest, customer, or other users (not current agent)
+    const isCustomerMessage = !isAgentMessage && !isSystemMessage;
 
     if (isSystemMessage) {
       return (
@@ -51,33 +113,44 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
             <i className="ri-information-line"></i>
             <span>{message.content}</span>
           </div>
-          <span className="message-time">{formatTime(message.timestamp)}</span>
+          <span className="message-time">{formatTime(message.created_at || message.timestamp)}</span>
         </div>
       );
     }
 
     return (
       <div 
-        key={message.id || index} 
-        className={`message-wrapper ${isAgentMessage ? 'agent-message' : 'customer-message'} ${isCurrentAgent ? 'own-message' : ''}`}
+        key={message.id || index}
+        className={`message-wrapper ${isCurrentAgent ? 'own-message' : ''} ${isAgentMessage ? 'agent-message' : 'customer-message'}`}
       >
-        {!isAgentMessage && (
+        {/* Avatar for non-current agent messages */}
+        {!isCurrentAgent && (
           <div className="sender-avatar">
-            <img 
-              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
-              alt={room.customer?.name}
-            />
+            {isAgentMessage ? (
+              <img 
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender_name || 'Agent')}&background=10b981&color=ffffff`}
+                alt={message.sender_name || 'Agent'}
+              />
+            ) : (
+              <img 
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(getCustomerName())}&background=4f46e5&color=ffffff`}
+                alt={getCustomerName()}
+              />
+            )}
           </div>
         )}
 
         <div className="message-content">
-          {!isCurrentAgent && isAgentMessage && (
+          {/* Sender name for non-current agent messages */}
+          {!isCurrentAgent && (
             <div className="sender-name">
-              {message.sender?.name || 'Agent'}
+              {isAgentMessage ? (message.sender_name || 'Agent') : getCustomerName()}
             </div>
           )}
 
-          <div className="message-bubble">
+          <div 
+            className="message-bubble"
+          >
             {message.type === 'file' ? (
               <div className="file-message">
                 <div className="file-info">
@@ -110,7 +183,7 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
           </div>
 
           <div className="message-footer">
-            <span className="message-time">{formatTime(message.timestamp)}</span>
+            <span className="message-time">{formatTime(message.created_at || message.timestamp)}</span>
             {isCurrentAgent && (
               <div className="message-status">
                 {message.status === 'sending' && (
@@ -129,15 +202,6 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
             )}
           </div>
         </div>
-
-        {isAgentMessage && (
-          <div className="sender-avatar">
-            <img 
-              src={message.sender?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender?.name || 'Agent')}&background=4f46e5&color=ffffff`}
-              alt={message.sender?.name}
-            />
-          </div>
-        )}
       </div>
     );
   };
@@ -157,15 +221,24 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
         ref={messagesContainerRef}
         onScroll={handleScroll}
       >
-        {messages.length === 0 ? (
+        {!messages || messages.length === 0 ? (
           <div className="empty-messages">
             <i className="ri-chat-3-line"></i>
             <h4>Cuộc hội thoại mới</h4>
             <p>Gửi tin nhắn đầu tiên để bắt đầu hỗ trợ khách hàng</p>
+            <div style={{fontSize: '12px', color: '#666', marginTop: '10px'}}>
+              Debug: messages={messages?.length || 0}, type={typeof messages}
+            </div>
           </div>
         ) : (
           <div className="messages-list">
-            {messages.map((message, index) => renderMessage(message, index))}
+            <div style={{fontSize: '12px', color: '#666', padding: '10px', borderBottom: '1px solid #eee'}}>
+              Debug: Rendering {messages.length} messages
+            </div>
+            {messages.map((message, index) => {
+              console.log(`🎯 Rendering message ${index}:`, message);
+              return renderMessage(message, index);
+            })}
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -177,7 +250,7 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
         </button>
       )}
 
-      <style jsx>{`
+      <style>{`
         .message-list-container {
           flex: 1;
           position: relative;
@@ -197,7 +270,7 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
           justify-content: center;
           height: 100%;
           text-align: center;
-          color: var(--text-light);
+          color: #6b7280;
         }
 
         .empty-messages i {
@@ -240,7 +313,7 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
         }
 
         .own-message .message-bubble {
-          background: var(--primary-color);
+          background: #4f46e5;
           color: white;
         }
 
@@ -264,28 +337,43 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
 
         .sender-name {
           font-size: 0.75rem;
-          color: var(--text-light);
+          color: #6b7280;
           margin-bottom: 0.25rem;
           padding: 0 0.75rem;
         }
 
         .message-bubble {
-          background: white;
-          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          border: 1px solid #d1d5db;
           border-radius: 1rem;
           padding: 0.75rem 1rem;
           word-wrap: break-word;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          color: #1f2937;
         }
 
         .agent-message .message-bubble {
-          background: #f8fafc;
-          border-color: #e2e8f0;
+          background: #f3f4f6;
+          border-color: #d1d5db;
+          color: #374151;
+        }
+
+        .customer-message .message-bubble {
+          background: #eff6ff;
+          border-color: #bfdbfe;
+          color: #1e40af;
+        }
+
+        .own-message .message-bubble {
+          background: #3b82f6;
+          border-color: #2563eb;
+          color: white;
         }
 
         .text-message {
           line-height: 1.5;
           font-size: 0.9rem;
+          color: inherit;
         }
 
         .file-message {
@@ -444,6 +532,7 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
 
           .message-bubble {
             padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
           }
 
           .image-message img {

@@ -88,7 +88,7 @@ const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
       <div className="message-item system">
         {renderMessageContent()}
         
-        <style jsx>{`
+        <style>{`
           .message-item.system {
             display: flex;
             justify-content: center;
@@ -157,7 +157,7 @@ const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .message-item {
           display: flex;
           margin-bottom: 0.25rem;
@@ -223,25 +223,34 @@ const MessageItem = ({ message, isOwn, showAvatar, showTime }) => {
         }
 
         .message-content {
-          background: white;
+          background: #ffffff;
           border-radius: 1rem;
           padding: 0.75rem 1rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e5e7eb;
-          word-wrap: break-word;
-          position: relative;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          border: 1px solid #d1d5db;
+          color: #1f2937;
         }
 
         .own .message-content {
-          background: var(--primary-color);
+          background: #3b82f6;
+          border-color: #2563eb;
           color: white;
-          border-color: var(--primary-color);
+        }
+
+        .other .message-content {
+          background: #f3f4f6;
+          border-color: #d1d5db;
+          color: #374151;
+        }
+          word-wrap: break-word;
+          position: relative;
         }
 
         .text-message p {
           margin: 0;
           line-height: 1.4;
           white-space: pre-wrap;
+          color: inherit;
         }
 
         .file-message {

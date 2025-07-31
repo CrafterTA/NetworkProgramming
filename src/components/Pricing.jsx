@@ -7,7 +7,7 @@ const Pricing = () => {
   const { isAuthenticated } = useAuth();
 
   const handlePlanSelect = (planId) => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       // If logged in, go to payment or course selection
       navigate(`/checkout/${planId}`);
     } else {

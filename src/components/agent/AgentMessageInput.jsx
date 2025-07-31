@@ -239,7 +239,7 @@ const AgentMessageInput = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style jsx="true">{`
         .message-input-container {
           position: relative;
           background: white;

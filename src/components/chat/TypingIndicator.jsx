@@ -25,7 +25,7 @@ const TypingIndicator = ({ user }) => {
         {user?.name || 'Nhân viên hỗ trợ'} đang nhập...
       </div>
 
-      <style jsx>{`
+      <style>{`
         .typing-indicator {
           display: flex;
           align-items: flex-end;

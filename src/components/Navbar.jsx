@@ -19,7 +19,7 @@ const Navbar = () => {
   }, [])
 
   const handleAuthAction = () => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       logout()
       navigate('/')
     } else {
@@ -54,7 +54,7 @@ const Navbar = () => {
             <Link to="/instructors" className="nav-item">Giảng viên</Link>
             
             {/* Agent Chat Link - Only for agents/admins */}
-            {isAuthenticated() && user && (user.Role === 'agent' || user.Role === 'admin') && (
+            {isAuthenticated && user && (user.role === 'agent' || user.role === 'admin' || user.Role === 'agent' || user.Role === 'admin') && (
               <Link to="/agent/chat" className="nav-item agent-link">
                 <i className="ri-customer-service-2-line"></i>
                 Hỗ trợ
@@ -64,17 +64,17 @@ const Navbar = () => {
 
           {/* Auth Buttons */}
           <div className="navbar-auth">
-            {isAuthenticated() && (
+            {isAuthenticated && (
               <span className="user-greeting">
                 👋 {user?.FullName || 'Học viên'}
               </span>
             )}
             
             <button className="auth-btn primary" onClick={handleAuthAction}>
-              {isAuthenticated() ? '🚪 Đăng xuất' : '🚀 Đăng nhập'}
+              {isAuthenticated ? '🚪 Đăng xuất' : '🚀 Đăng nhập'}
             </button>
             
-            {!isAuthenticated() && (
+            {!isAuthenticated && (
               <button className="auth-btn secondary" onClick={() => navigate('/register')}>
                 🎓 Đăng ký
               </button>
@@ -106,7 +106,7 @@ const Navbar = () => {
           </Link>
           
           <div className="mobile-auth">
-            {isAuthenticated() && (
+            {isAuthenticated && (
               <span className="mobile-user-greeting">
                 👋 Xin chào, {user?.FullName || 'Học viên'}
               </span>
@@ -119,10 +119,10 @@ const Navbar = () => {
                 setIsMenuOpen(false)
               }}
             >
-              {isAuthenticated() ? '🚪 Đăng xuất' : '🚀 Đăng nhập'}
+              {isAuthenticated ? '🚪 Đăng xuất' : '🚀 Đăng nhập'}
             </button>
             
-            {!isAuthenticated() && (
+            {!isAuthenticated && (
               <button 
                 className="mobile-auth-btn secondary" 
                 onClick={() => {
@@ -137,7 +137,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      <style jsx>{`
+            <style>{`
         .modern-navbar {
           position: fixed;
           top: 0;

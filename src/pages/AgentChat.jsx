@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'        const refreshResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/rooms/${roomId}/mark_read`, {
 import { useAuth } from '../contexts/AuthContext';
-import { useChatContext } from '../contexts/ChatContext';
+import { useChat } from '../contexts/ChatContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
 import AgentChatWindow from '../components/agent/AgentChatWindow';
 import AgentHeader from '../components/agent/AgentHeader';
@@ -8,38 +9,122 @@ import '../styles/agent-chat.css';
 
 const AgentChat = () => {
   const { user, isAuthenticated } = useAuth();
-  const { 
-    isConnected, 
-    activeRooms, 
-    currentRoom, 
-    messages, 
+  const navigate = useNavigate();
+  const {
+    rooms,
+    activeRoom,
+    messages,
     onlineAgents,
-    connectWebSocket
-  } = useChatContext();
-
-  const [selectedRoom, setSelectedRoom] = useState(null);
+    notifications,
+    isLoading,
+    refreshRooms,
+    loadMessages,
+    joinRoom,
+    leaveRoom,
+    sendMessage,
+    closeRoom,
+    setActiveRoom,
+    lastUpdateTime
+  } = useChat();  const [selectedRoom, setSelectedRoom] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [agentStatus, setAgentStatus] = useState('online'); // online, busy, away, offline
 
-  // Check if user is agent/admin
+  // Check if user is agent/admin and load initial data
   useEffect(() => {
-    if (!isAuthenticated() || !user) {
-      window.location.href = '/login';
+    if (!isAuthenticated || !user) {
+      navigate('/login');
       return;
     }
 
-    if (user.Role !== 'agent' && user.Role !== 'admin') {
+    if (user.role !== 'agent' && user.role !== 'admin') {
       alert('Bạn không có quyền truy cập trang này');
-      window.location.href = '/';
+      navigate('/');
       return;
     }
 
-    // Connect WebSocket for agent
-    connectWebSocket();
-  }, [user, isAuthenticated]);
+    // Load initial chat rooms data
+    refreshRooms();
+  }, [user, isAuthenticated, navigate]); // 🔧 Fixed: Removed refreshRooms dependency to prevent infinite loop
 
-  const handleRoomSelect = (room) => {
+    const handleRoomSelect = async (room) => {
+    console.log('🎯 Agent selecting room:', room.room_id);
+    
+    // Leave current room if any
+    if (selectedRoom) {
+      leaveRoom(selectedRoom.room_id || selectedRoom.id);
+    }
+
+    // Set the selected room
     setSelectedRoom(room);
+    setActiveRoom(room);
+
+    // Join the new room
+    const roomId = room.room_id || room.id;
+    await joinRoom(roomId);
+
+    // Load messages for this room
+    await loadMessages(roomId);
+  };
+
+  const handleMarkAsRead = async (roomId) => {
+    console.log('🔍 handleMarkAsRead called with roomId:', roomId);
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Token exists:', !!token);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/rooms/${roomId}/mark_read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('🔍 Mark-as-read response status:', response.status);
+
+      if (response.status === 401) {
+        console.log('🔄 Token expired, attempting refresh...');
+        // Try to refresh token first
+        const refreshResult = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        
+        if (refreshResult.ok) {
+          const refreshData = await refreshResult.json();
+          localStorage.setItem('token', refreshData.data.accessToken);
+          console.log('✅ Token refreshed, retrying mark-as-read...');
+          
+          // Retry with new token
+          const retryResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/rooms/${roomId}/mark-read`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${refreshData.data.accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (retryResponse.ok) {
+            const result = await retryResponse.json();
+            console.log('✅ Mark-as-read success after refresh:', result);
+            await refreshRooms();
+            return;
+          }
+        }
+      }
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Mark-as-read success:', result);
+        // Refresh rooms to update unread count
+        await refreshRooms();
+      } else {
+        const error = await response.json();
+        console.error('❌ Mark-as-read error:', error);
+      }
+    } catch (error) {
+      console.error('❌ Mark-as-read exception:', error);
+    }
   };
 
   const handleStatusChange = (newStatus) => {
@@ -47,7 +132,7 @@ const AgentChat = () => {
     // TODO: Send status update to server
   };
 
-  if (!isAuthenticated() || !user) {
+  if (!isAuthenticated || !user) {
     return (
       <div className="loading-container">
         <div className="loading-spinner">
@@ -65,7 +150,6 @@ const AgentChat = () => {
         agent={user}
         status={agentStatus}
         onStatusChange={handleStatusChange}
-        isConnected={isConnected}
         onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         sidebarCollapsed={sidebarCollapsed}
       />
@@ -73,9 +157,10 @@ const AgentChat = () => {
       <div className="chat-layout">
         {/* Sidebar */}
         <AgentSidebar
-          rooms={activeRooms}
+          rooms={rooms}
           selectedRoom={selectedRoom}
           onRoomSelect={handleRoomSelect}
+          onMarkAsRead={handleMarkAsRead}
           collapsed={sidebarCollapsed}
           onlineAgents={onlineAgents}
           currentAgent={user}
@@ -86,8 +171,9 @@ const AgentChat = () => {
           {selectedRoom ? (
             <AgentChatWindow
               room={selectedRoom}
-              messages={messages.filter(msg => msg.room_id === selectedRoom.id)}
+              messages={messages.filter(msg => msg.room_id === selectedRoom.room_id || msg.room_id === selectedRoom.id)}
               currentAgent={user}
+              lastUpdateTime={lastUpdateTime}
             />
           ) : (
             <div className="no-room-selected">
@@ -100,21 +186,21 @@ const AgentChat = () => {
                   <div className="stat-card">
                     <i className="ri-chat-4-line"></i>
                     <div>
-                      <h4>{activeRooms.length}</h4>
+                      <h4>{rooms?.length || 0}</h4>
                       <p>Cuộc hội thoại</p>
                     </div>
                   </div>
                   <div className="stat-card">
                     <i className="ri-time-line"></i>
                     <div>
-                      <h4>{activeRooms.filter(r => r.status === 'waiting').length}</h4>
+                      <h4>{rooms?.filter(r => r.status === 'waiting').length || 0}</h4>
                       <p>Chờ xử lý</p>
                     </div>
                   </div>
                   <div className="stat-card">
                     <i className="ri-user-line"></i>
                     <div>
-                      <h4>{onlineAgents.length}</h4>
+                      <h4>{onlineAgents?.length || 0}</h4>
                       <p>Agent online</p>
                     </div>
                   </div>
@@ -125,7 +211,7 @@ const AgentChat = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .agent-chat-container {
           height: 100vh;
           display: flex;

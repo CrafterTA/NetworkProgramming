@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useChatContext } from '../../contexts/ChatContext';
+import React, { useState, useEffect, useRef } from 'react';
+import { useChat } from '../../contexts/ChatContext';
 import { useAuth } from '../../contexts/AuthContext';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -16,26 +16,40 @@ const ChatWindow = ({ onClose }) => {
   
   const {
     messages,
-    currentRoom,
+    activeRoom: currentRoom, // Map activeRoom to currentRoom for compatibility
     activeRooms,
     onlineAgents,
     isConnected,
     createRoom,
     joinRoom,
     leaveRoom,
-    typing
-  } = useChatContext();
+    typing,
+    guestSession,
+    isGuestMode,
+    connectGuestSocket,
+    lastUpdateTime
+  } = useChat();
   
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom khi có tin nhắn mới
   useEffect(() => {
-    scrollToBottom();
+    // Delay scroll để đảm bảo DOM đã được update
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end' 
+      });
+    }
   };
 
   // Xử lý drag & drop file
@@ -59,10 +73,45 @@ const ChatWindow = ({ onClose }) => {
     }
   };
 
-  // Tạo phòng chat mới
-  const handleCreateRoom = (agentId = null, priority = 'normal') => {
-    createRoom(agentId, priority);
-    setView('chat');
+  // Tạo phòng chat mới hoặc sử dụng guest session
+    const handleCreateRoom = (priority = 'normal', agentId = null) => {
+    if (isGuestMode && guestSession) {
+      connectGuestSocket();
+      setView('chat');
+      return;
+    }
+    
+    if (isAuthenticated && user) {
+      // Check if user already has an active room in the activeRooms list
+      const existingRoom = activeRooms?.find(room => 
+        room.customer_email === user.email && 
+        room.status !== 'closed'
+      );
+      
+      if (existingRoom) {
+        console.log('📋 User already has active room:', existingRoom.room_id);
+        joinRoom(existingRoom.room_id); // Join the existing room
+        setView('chat');
+        return;
+      }
+      
+      // Create new room only if no active room exists
+      const roomData = {
+        customerName: user.full_name,
+        customerEmail: user.email,
+        customerPhone: user.phone || '',
+        subject: 'Cần hỗ trợ',
+        customerType: user.role || 'student',
+        priority: priority || 'normal',
+        agentId
+      };
+      console.log('🆕 Creating new room - Room data:', roomData);
+      createRoom(roomData);
+      setView('chat');
+    } else {
+      // Chưa authenticated và không có guest session
+      console.warn('⚠️ Cannot create room - no authentication or guest session');
+    }
   };
 
   // Chuyển đổi phòng chat
@@ -99,13 +148,19 @@ const ChatWindow = ({ onClose }) => {
       <div className="chat-content">
         {view === 'chat' && (
           <>
-            {currentRoom ? (
+            {currentRoom || (isGuestMode && guestSession) ? (
               <>
+                {console.log('🎯 ChatWindow - Showing chat interface:', { 
+                  currentRoom: !!currentRoom, 
+                  isGuestMode, 
+                  guestSession: !!guestSession,
+                  isConnected 
+                })}
                 {/* Messages Area */}
                 <div className="messages-container">
                   <MessageList 
                     messages={messages}
-                    currentUser={user}
+                    currentUser={user || { name: guestSession?.customerName || 'Guest' }}
                     typing={typing}
                   />
                   <div ref={messagesEndRef} />
@@ -113,17 +168,30 @@ const ChatWindow = ({ onClose }) => {
 
                 {/* Message Input */}
                 <MessageInput 
+                  roomId={currentRoom?.room_id}
+                  disabled={false}
+                  placeholder={isGuestMode ? "Nhập tin nhắn để bắt đầu chat với tư vấn viên..." : "Nhập tin nhắn..."}
                   onFileUpload={() => setShowFileUpload(true)}
-                  disabled={!isConnected}
                 />
               </>
             ) : (
               /* No Room Selected */
               <div className="no-room-selected">
+                {console.log('📋 ChatWindow - Showing welcome screen:', { 
+                  currentRoom: !!currentRoom, 
+                  isGuestMode, 
+                  guestSession: !!guestSession,
+                  isAuthenticated,
+                  isConnected 
+                })}
                 <div className="welcome-message">
                   <i className="ri-customer-service-2-line"></i>
                   <h3>Chào mừng đến với HUTECH Support!</h3>
-                  <p>Bắt đầu cuộc trò chuyện để nhận hỗ trợ từ đội ngũ chuyên viên</p>
+                  {isGuestMode && guestSession ? (
+                    <p>Xin chào {guestSession.name}! Bắt đầu cuộc trò chuyện để nhận hỗ trợ.</p>
+                  ) : (
+                    <p>Bắt đầu cuộc trò chuyện để nhận hỗ trợ từ đội ngũ chuyên viên</p>
+                  )}
                   
                   <div className="quick-actions">
                     <button 
@@ -131,22 +199,24 @@ const ChatWindow = ({ onClose }) => {
                       onClick={() => handleCreateRoom()}
                     >
                       <i className="ri-chat-new-line"></i>
-                      Bắt đầu chat
+                      {isGuestMode ? 'Bắt đầu chat với tư vấn viên' : 'Bắt đầu chat'}
                     </button>
                     
-                    <button 
-                      className="btn-view-rooms"
-                      onClick={() => setView('rooms')}
-                    >
-                      <i className="ri-chat-history-line"></i>
-                      Lịch sử chat ({activeRooms.length})
-                    </button>
+                    {isAuthenticated && (
+                      <button 
+                        className="btn-view-rooms"
+                        onClick={() => setView('rooms')}
+                      >
+                        <i className="ri-chat-history-line"></i>
+                        Lịch sử chat ({(activeRooms || []).length})
+                      </button>
+                    )}
                   </div>
 
                   {/* Online Agents */}
-                  {onlineAgents.length > 0 && (
+                  {(onlineAgents || []).length > 0 && (
                     <div className="online-agents">
-                      <h4>Nhân viên đang online ({onlineAgents.length})</h4>
+                      <h4>Nhân viên đang online ({(onlineAgents || []).length})</h4>
                       <div className="agents-list">
                         {onlineAgents.slice(0, 3).map(agent => (
                           <div key={agent.id} className="agent-item">
@@ -248,7 +318,7 @@ const ChatWindow = ({ onClose }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .chat-window {
           position: fixed;
           bottom: 100px;

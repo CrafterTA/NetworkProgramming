@@ -8,7 +8,8 @@ const AgentSidebar = ({
   onRoomSelect, 
   collapsed, 
   onlineAgents, 
-  currentAgent 
+  currentAgent,
+  onMarkAsRead 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // all, waiting, active, closed
@@ -26,16 +27,23 @@ const AgentSidebar = ({
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(room => 
-        room.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (room.customer_name || room.customer?.name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         room.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         room.subject?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Sort by latest activity
-    return filtered.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+    return filtered.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
   }, [rooms, searchTerm, filterStatus]);
 
+  const handleRoomClick = async (room) => {
+    // Mark as read if there are unread messages
+    if (room.unread_count > 0 && onMarkAsRead) {
+      await onMarkAsRead(room.room_id || room.id);
+    }
+    onRoomSelect(room);
+  };
   const getStatusColor = (status) => {
     switch (status) {
       case 'waiting': return '#f59e0b';
@@ -96,25 +104,30 @@ const AgentSidebar = ({
         <div className="room-list">
           {filteredRooms.slice(0, 5).map(room => (
             <button
-              key={room.id}
-              className={`room-item collapsed ${selectedRoom?.id === room.id ? 'active' : ''}`}
-              onClick={() => onRoomSelect(room)}
+              key={room.room_id || room.id}
+              className={`room-item collapsed ${selectedRoom?.room_id === room.room_id || selectedRoom?.id === room.id ? 'active' : ''}`}
+              onClick={() => handleRoomClick(room)}
             >
               <div className="room-avatar">
                 <img 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
-                  alt={room.customer?.name}
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer_name || room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
+                  alt={room.customer_name || room.customer?.name || 'Guest'}
                 />
                 <div 
                   className="status-indicator"
                   style={{ backgroundColor: getStatusColor(room.status) }}
                 ></div>
+                {(room.unread_count > 0) && (
+                  <div className="unread-badge-collapsed">
+                    {room.unread_count > 99 ? '99+' : room.unread_count}
+                  </div>
+                )}
               </div>
             </button>
           ))}
         </div>
 
-        <style jsx>{`
+        <style>{`
           .agent-sidebar.collapsed {
             width: 70px !important;
             min-width: 70px !important;
@@ -218,28 +231,33 @@ const AgentSidebar = ({
         ) : (
           filteredRooms.map(room => (
             <button
-              key={room.id}
-              className={`room-item ${selectedRoom?.id === room.id ? 'active' : ''}`}
-              onClick={() => onRoomSelect(room)}
+              key={room.room_id || room.id}
+              className={`room-item ${selectedRoom?.room_id === room.room_id || selectedRoom?.id === room.id ? 'active' : ''}`}
+              onClick={() => handleRoomClick(room)}
             >
               <div className="room-avatar">
                 <img 
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
-                  alt={room.customer?.name}
+                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(room.customer_name || room.customer?.name || 'Guest')}&background=4f46e5&color=ffffff`}
+                  alt={room.customer_name || room.customer?.name || 'Guest'}
                 />
                 <div 
                   className="status-indicator"
                   style={{ backgroundColor: getStatusColor(room.status) }}
                 ></div>
+                {(room.unread_count > 0) && (
+                  <div className="unread-badge-avatar">
+                    {room.unread_count > 99 ? '99+' : room.unread_count}
+                  </div>
+                )}
               </div>
 
               <div className="room-info">
                 <div className="room-header">
                   <h4 className="customer-name">
-                    {room.customer?.name || 'Khách vãng lai'}
+                    {room.customer_name || room.customer?.name || 'Khách vãng lai'}
                   </h4>
                   <span className="time">
-                    {formatTime(room.updatedAt || room.createdAt)}
+                    {formatTime(room.updated_at || room.created_at)}
                   </span>
                 </div>
 
@@ -254,9 +272,10 @@ const AgentSidebar = ({
                     >
                       {getStatusText(room.status)}
                     </span>
-                    {room.unreadCount > 0 && (
-                      <span className="unread-badge">
-                        {room.unreadCount}
+                    {(room.unread_count > 0) && (
+                      <span className="unread-badge-meta">
+                        <i className="ri-mail-unread-line"></i>
+                        {room.unread_count > 99 ? '99+' : room.unread_count}
                       </span>
                     )}
                   </div>
@@ -301,7 +320,7 @@ const AgentSidebar = ({
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .agent-sidebar {
           width: 350px;
           min-width: 350px;
@@ -449,6 +468,90 @@ const AgentSidebar = ({
           height: 14px;
           border-radius: 50%;
           border: 2px solid white;
+        }
+
+        .unread-badge {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: #dc3545;
+          color: white;
+          border-radius: 50%;
+          min-width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: bold;
+          border: 2px solid white;
+        }
+
+        .unread-badge-collapsed {
+          position: absolute;
+          top: -5px;
+          right: -5px;
+          background: linear-gradient(135deg, #ff4757, #ff3742);
+          color: white;
+          border-radius: 50%;
+          min-width: 18px;
+          height: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: bold;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+          animation: pulse 2s infinite;
+        }
+
+        .unread-badge-avatar {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          background: linear-gradient(135deg, #ff4757, #ff3742);
+          color: white;
+          border-radius: 50%;
+          min-width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 700;
+          border: 3px solid white;
+          box-shadow: 0 3px 8px rgba(255, 71, 87, 0.4);
+          z-index: 10;
+        }
+
+        .unread-badge-meta {
+          background: linear-gradient(135deg, #ff4757, #ff3742);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+        }
+
+        .unread-badge-meta i {
+          font-size: 12px;
+        }
+
+        @keyframes pulse {
+          0% {
+            box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+          }
+          50% {
+            box-shadow: 0 2px 4px rgba(255, 71, 87, 0.5), 0 0 0 4px rgba(255, 71, 87, 0.1);
+          }
+          100% {
+            box-shadow: 0 2px 4px rgba(255, 71, 87, 0.3);
+          }
         }
 
         .room-info {

@@ -1,1330 +1,996 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-
-// Mock data for testing
-const MOCK_ROOMS = [
-  {
-    id: 'room_001',
-    customer: {
-      name: 'Nguyễn Văn Minh',
-      email: 'minh.nguyen@student.hutech.edu.vn',
-      phone: '0912345678',
-      type: 'student'
-    },
-    subject: 'Hỗ trợ đăng ký học phần',
-    status: 'waiting',
-    priority: 'normal',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    updatedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
-    messageCount: 3,
-    duration: '15 phút',
-    fileCount: 1,
-    lastMessage: {
-      content: 'Em cần hướng dẫn đăng ký học phần môn Lập trình Web ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString()
-    },
-    unreadCount: 2
-  },
-  {
-    id: 'room_002', 
-    customer: {
-      name: 'Trần Thị Lan',
-      email: 'lan.tran@gmail.com',
-      phone: '0987654321',
-      type: 'guest'
-    },
-    subject: 'Tư vấn chương trình đào tạo',
-    status: 'active',
-    priority: 'high',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-    updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
-    messageCount: 8,
-    duration: '25 phút',
-    fileCount: 2,
-    lastMessage: {
-      content: 'Cảm ơn anh đã tư vấn chi tiết',
-      type: 'text',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString()
-    },
-    unreadCount: 0
-  },
-  {
-    id: 'room_003',
-    customer: {
-      name: 'Lê Hoàng Nam',
-      email: 'nam.le@student.hutech.edu.vn',
-      phone: '0901112233',
-      type: 'student'
-    },
-    subject: 'Vấn đề đăng nhập hệ thống',
-    status: 'closed',
-    priority: 'urgent',
-    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    messageCount: 12,
-    duration: '45 phút',
-    fileCount: 0,
-    lastMessage: {
-      content: 'Vấn đề đã được giải quyết. Cảm ơn bạn!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-    },
-    unreadCount: 0
-  },
-  {
-    id: 'room_004',
-    customer: {
-      name: 'Phạm Thị Hoa',
-      email: 'hoa.pham@outlook.com',
-      phone: '0933445566',
-      type: 'guest'
-    },
-    subject: 'Thông tin học phí',
-    status: 'waiting',
-    priority: 'normal',
-    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
-    updatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    messageCount: 1,
-    duration: '2 phút',
-    fileCount: 0,
-    lastMessage: {
-      content: 'Xin chào, tôi muốn biết thông tin về học phí các ngành học',
-      type: 'text',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-    },
-    unreadCount: 1
-  },
-  {
-    id: 'room_005',
-    customer: {
-      name: 'Nguyễn Minh Tú',
-      email: 'guest_001@temp.com',
-      phone: '0988123456',
-      type: 'guest'
-    },
-    subject: 'Tư vấn chương trình học online',
-    status: 'active',
-    priority: 'normal',
-    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(), // 20 minutes ago
-    updatedAt: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
-    messageCount: 6,
-    duration: '18 phút',
-    fileCount: 0,
-    lastMessage: {
-      content: 'Em cảm ơn anh rất nhiều!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString()
-    },
-    unreadCount: 0
-  },
-  {
-    id: 'room_006',
-    customer: {
-      name: 'Lê Thị Hương',
-      email: 'guest_002@temp.com',
-      phone: '0977654321',
-      type: 'guest'
-    },
-    subject: 'Hỏi về thủ tục nhập học',
-    status: 'waiting',
-    priority: 'high',
-    createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), // 10 minutes ago
-    updatedAt: new Date(Date.now() - 1 * 60 * 1000).toISOString(), // 1 minute ago
-    messageCount: 3,
-    duration: '9 phút',
-    fileCount: 2,
-    lastMessage: {
-      content: 'Em gửi bằng tốt nghiệp để anh kiểm tra',
-      type: 'file',
-      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString()
-    },
-    unreadCount: 2
-  },
-  {
-    id: 'room_007',
-    customer: {
-      name: 'Trần Văn Đức',
-      email: 'guest_003@temp.com',
-      phone: '0966887799',
-      type: 'guest'
-    },
-    subject: 'Liên hệ khẩn cấp',
-    status: 'active',
-    priority: 'urgent',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
-    updatedAt: new Date(Date.now() - 30 * 1000).toISOString(), // 30 seconds ago
-    messageCount: 8,
-    duration: '4.5 phút',
-    fileCount: 1,
-    lastMessage: {
-      content: 'Anh ơi, em cần giải quyết gấp!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 30 * 1000).toISOString()
-    },
-    unreadCount: 1
-  },
-  {
-    id: 'room_008',
-    customer: {
-      name: 'Vũ Thị Lan Anh',
-      email: 'guest_004@temp.com',
-      phone: '0955443322',
-      type: 'guest'
-    },
-    subject: 'Hỗ trợ kỹ thuật website',
-    status: 'closed',
-    priority: 'normal',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-    updatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
-    messageCount: 12,
-    duration: '15 phút',
-    fileCount: 3,
-    lastMessage: {
-      content: 'Vấn đề đã được giải quyết. Cảm ơn team support!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString()
-    },
-    unreadCount: 0
-  }
-];
-
-const MOCK_MESSAGES = {
-  'room_001': [
-    {
-      id: 'msg_001',
-      content: 'Xin chào em! Tôi là nhân viên hỗ trợ của HUTECH. Tôi có thể giúp gì cho em?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_001',
-      status: 'read'
-    },
-    {
-      id: 'msg_002',
-      content: 'Em chào anh ạ. Em cần hướng dẫn cách đăng ký học phần ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Văn Minh', role: 'student' },
-      room_id: 'room_001',
-      status: 'delivered'
-    },
-    {
-      id: 'msg_003',
-      content: 'Em cần hướng dẫn đăng ký học phần môn Lập trình Web ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Văn Minh', role: 'student' },
-      room_id: 'room_001',
-      status: 'sent'
-    }
-  ],
-  'room_002': [
-    {
-      id: 'msg_004',
-      content: 'Chào chị! Tôi có thể tư vấn cho chị về các chương trình đào tạo tại HUTECH.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_002',
-      status: 'read'
-    },
-    {
-      id: 'msg_005',
-      content: 'Em muốn tìm hiểu về ngành Công nghệ thông tin ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Thị Lan', role: 'guest' },
-      room_id: 'room_002',
-      status: 'read'
-    },
-    {
-      id: 'msg_006',
-      content: 'Ngành CNTT tại HUTECH có 3 chuyên ngành chính: Công nghệ phần mềm, Hệ thống thông tin, và Khoa học máy tính. Chị quan tâm đến chuyên ngành nào?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_002',
-      status: 'read'
-    },
-    {
-      id: 'msg_007',
-      content: 'Em quan tâm đến Công nghệ phần mềm ạ. Chương trình học như thế nào?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 40 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Thị Lan', role: 'guest' },
-      room_id: 'room_002',
-      status: 'read'
-    },
-    {
-      id: 'msg_008',
-      content: 'Chuyên ngành Công nghệ phần mềm tập trung vào lập trình, phát triển ứng dụng, quản lý dự án phần mềm. Thời gian học 4 năm với nhiều project thực tế.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_002',
-      status: 'read'
-    },
-    {
-      id: 'msg_009',
-      content: 'Cảm ơn anh đã tư vấn chi tiết',
-      type: 'text',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Thị Lan', role: 'guest' },
-      room_id: 'room_002',
-      status: 'delivered'
-    }
-  ],
-  'room_003': [
-    {
-      id: 'msg_010',
-      content: 'Xin chào! Tôi thấy bạn gặp vấn đề với việc đăng nhập hệ thống. Có thể mô tả chi tiết lỗi không?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_011',
-      content: 'Em nhập đúng email và mật khẩu nhưng cứ báo "Thông tin đăng nhập không chính xác"',
-      type: 'text',
-      timestamp: new Date(Date.now() - 3.5 * 60 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Hoàng Nam', role: 'student' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_012',
-      content: 'Bạn thử reset mật khẩu qua email xem. Tôi sẽ gửi link hướng dẫn.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_013',
-      content: 'Em đã thử reset rồi ạ, vẫn không được',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Hoàng Nam', role: 'student' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_014',
-      content: 'Vậy tôi sẽ kiểm tra tài khoản của bạn trực tiếp trong hệ thống. Đợi 5 phút nhé.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2.2 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_015',
-      content: 'Tôi đã cập nhật lại tài khoản. Bạn thử đăng nhập lại xem.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2.1 * 60 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_003',
-      status: 'read'
-    },
-    {
-      id: 'msg_016',
-      content: 'Được rồi ạ! Cảm ơn anh nhiều. Vấn đề đã được giải quyết.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Hoàng Nam', role: 'student' },
-      room_id: 'room_003',
-      status: 'read'
-    }
-  ],
-  'room_004': [
-    {
-      id: 'msg_017',
-      content: 'Xin chào, tôi muốn biết thông tin về học phí các ngành học',
-      type: 'text',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      sender: { name: 'Phạm Thị Hoa', role: 'guest' },
-      room_id: 'room_004',
-      status: 'sent'
-    }
-  ],
-  'room_005': [
-    {
-      id: 'msg_018',
-      content: 'Xin chào! Em muốn tìm hiểu về chương trình học online của trường ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_019',
-      content: 'Chào bạn! Tôi có thể hỗ trợ bạn về chương trình học online. Bạn quan tâm đến ngành nào?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 18 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_020',
-      content: 'Em quan tâm đến ngành Marketing Digital ạ. Học online có được cấp bằng giống học trực tiếp không anh?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_021',
-      content: 'Có bạn à! Bằng cấp sẽ giống hệt như học trực tiếp, không có ghi chú "online". Chương trình Marketing Digital có thời lượng 4 năm với nhiều dự án thực tế.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_022',
-      content: 'Học phí thế nào ạ? Có hỗ trợ trả góp không?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_023',
-      content: 'Học phí là 15 triệu/năm, có thể trả theo học kỳ. Trường cũng có chương trình học bổng và hỗ trợ vay ngân hàng với lãi suất ưu đãi.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_005',
-      status: 'read'
-    },
-    {
-      id: 'msg_024',
-      content: 'Em cảm ơn anh rất nhiều!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      sender: { name: 'Nguyễn Minh Tú', role: 'guest' },
-      room_id: 'room_005',
-      status: 'delivered'
-    }
-  ],
-  'room_006': [
-    {
-      id: 'msg_025',
-      content: 'Chào anh! Em muốn hỏi về thủ tục nhập học ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Thị Hương', role: 'guest' },
-      room_id: 'room_006',
-      status: 'read'
-    },
-    {
-      id: 'msg_026',
-      content: 'Em cần chuẩn bị những giấy tờ gì để nhập học ngành Kế toán ạ?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Thị Hương', role: 'guest' },
-      room_id: 'room_006',
-      status: 'read'
-    },
-    {
-      id: 'msg_027',
-      content: 'Em gửi bằng tốt nghiệp để anh kiểm tra',
-      type: 'file',
-      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-      sender: { name: 'Lê Thị Hương', role: 'guest' },
-      room_id: 'room_006',
-      status: 'sent',
-      fileData: {
-        name: 'bang_tot_nghiep.pdf',
-        size: '2.5MB',
-        type: 'application/pdf'
-      }
-    }
-  ],
-  'room_007': [
-    {
-      id: 'msg_028',
-      content: 'Anh ơi, em cần hỗ trợ khẩn cấp!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Văn Đức', role: 'guest' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_029',
-      content: 'Chào bạn! Tôi có thể giúp gì cho bạn?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 4.5 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_030',
-      content: 'Em đang làm đơn xin học lại nhưng hệ thống báo lỗi mãi, hôm nay là deadline rồi!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 4 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Văn Đức', role: 'guest' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_031',
-      content: 'Tôi sẽ kiểm tra hệ thống ngay. Bạn có thể gửi screenshot lỗi không?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 3.5 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_032',
-      content: 'Đây ạ!',
-      type: 'file',
-      timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Văn Đức', role: 'guest' },
-      room_id: 'room_007',
-      status: 'read',
-      fileData: {
-        name: 'loi_he_thong.png',
-        size: '1.2MB',
-        type: 'image/png'
-      }
-    },
-    {
-      id: 'msg_033',
-      content: 'Tôi thấy vấn đề rồi. Hệ thống đang bảo trì, tôi sẽ xử lý thủ công cho bạn ngay.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_034',
-      content: 'Cảm ơn anh! Em đang lo lắm',
-      type: 'text',
-      timestamp: new Date(Date.now() - 1.5 * 60 * 1000).toISOString(),
-      sender: { name: 'Trần Văn Đức', role: 'guest' },
-      room_id: 'room_007',
-      status: 'read'
-    },
-    {
-      id: 'msg_035',
-      content: 'Anh ơi, em cần giải quyết gấp!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 30 * 1000).toISOString(),
-      sender: { name: 'Trần Văn Đức', role: 'guest' },
-      room_id: 'room_007',
-      status: 'sent'
-    }
-  ],
-  'room_008': [
-    {
-      id: 'msg_036',
-      content: 'Xin chào! Website của trường có vấn đề, em không vào được trang đăng ký môn học',
-      type: 'text',
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_037',
-      content: 'Chào bạn! Tôi sẽ kiểm tra vấn đề này. Bạn sử dụng trình duyệt gì?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 58 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_038',
-      content: 'Em dùng Chrome ạ. Nó cứ loading mãi không vào được',
-      type: 'text',
-      timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
-      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_039',
-      content: 'Bạn thử xóa cache và cookie xem. Tôi gửi hướng dẫn.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 52 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_040',
-      content: 'Hướng dẫn xóa cache Chrome',
-      type: 'file',
-      timestamp: new Date(Date.now() - 50 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_008',
-      status: 'read',
-      fileData: {
-        name: 'huong_dan_xoa_cache.pdf',
-        size: '850KB',
-        type: 'application/pdf'
-      }
-    },
-    {
-      id: 'msg_041',
-      content: 'Em làm theo rồi nhưng vẫn không được ạ',
-      type: 'text',
-      timestamp: new Date(Date.now() - 48 * 60 * 1000).toISOString(),
-      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_042',
-      content: 'Vậy tôi sẽ kết nối remote để hỗ trợ trực tiếp. Bạn có thể cài TeamViewer không?',
-      type: 'text',
-      timestamp: new Date(Date.now() - 47 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_043',
-      content: 'Được ạ! Em cài xong rồi. ID: 1234567890',
-      type: 'text',
-      timestamp: new Date(Date.now() - 46 * 60 * 1000).toISOString(),
-      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_044',
-      content: 'Tôi đã kết nối và sửa được rồi. Vấn đề do extension AdBlock chặn script.',
-      type: 'text',
-      timestamp: new Date(Date.now() - 45.5 * 60 * 1000).toISOString(),
-      sender: { id: 1, name: 'Agent', role: 'agent' },
-      room_id: 'room_008',
-      status: 'read'
-    },
-    {
-      id: 'msg_045',
-      content: 'Vấn đề đã được giải quyết. Cảm ơn team support!',
-      type: 'text',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      sender: { name: 'Vũ Thị Lan Anh', role: 'guest' },
-      room_id: 'room_008',
-      status: 'read'
-    }
-  ]
-};
-
-const MOCK_ONLINE_AGENTS = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn An',
-    avatar: null,
-    status: 'online',
-    activeRooms: 2
-  },
-  {
-    id: 2, 
-    name: 'Trần Thị Bình',
-    avatar: null,
-    status: 'busy',
-    activeRooms: 3
-  },
-  {
-    id: 3,
-    name: 'Lê Văn Cường',
-    avatar: null,
-    status: 'online',
-    activeRooms: 1
-  }
-];
+import { chatService, guestService } from '../services/api';
+import socketService from '../services/socket';
+import { toast } from 'react-toastify';
 
 const ChatContext = createContext();
 
-export const useChatContext = () => {
+export const useChat = () => {
   const context = useContext(ChatContext);
   if (!context) {
-    throw new Error('useChatContext must be used within a ChatProvider');
+    throw new Error('useChat must be used within a ChatProvider');
   }
   return context;
 };
 
 export const ChatProvider = ({ children }) => {
   const { user, isAuthenticated } = useAuth();
-  const [socket, setSocket] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [rooms, setRooms] = useState([]);
+  const [activeRoom, setActiveRoom] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [activeRooms, setActiveRooms] = useState([]);
-  const [currentRoom, setCurrentRoom] = useState(null);
-  const [onlineAgents, setOnlineAgents] = useState(MOCK_ONLINE_AGENTS);
+  const [isLoading, setIsLoading] = useState(false);
+  const [onlineAgents, setOnlineAgents] = useState([]);
+  const [typingUsers, setTypingUsers] = useState([]);
+  const [unreadCounts, setUnreadCounts] = useState({});
   const [notifications, setNotifications] = useState([]);
-  const [typing, setTyping] = useState(null);
-  const [guestSession, setGuestSession] = useState(null); // Track guest session
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
-  const heartbeatInterval = useRef(null);
-  const sessionTimeout = useRef(null);
+  
+  // Guest session state
+  const [guestSession, setGuestSession] = useState(null);
+  const [isGuestMode, setIsGuestMode] = useState(false);
+  
+  // Socket connection state
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  
+  // Refs for cleanup
+  const typingTimerRef = useRef(null);
+  const messagePollingRef = useRef(null);
 
-  // Initialize mock data for agents
   useEffect(() => {
-    if (isAuthenticated() && user && (user.Role === 'agent' || user.Role === 'admin')) {
-      // Simulate loading mock rooms
-      setTimeout(() => {
-        setActiveRooms(MOCK_ROOMS);
-        setIsConnected(true);
-        
-        // Auto-select first room and load its messages
-        if (MOCK_ROOMS.length > 0) {
-          const firstRoom = MOCK_ROOMS[0];
-          setCurrentRoom(firstRoom);
-          const roomMessages = MOCK_MESSAGES[firstRoom.id] || [];
-          setMessages(roomMessages);
-          console.log(`Auto-selected first room: ${firstRoom.id}, loaded ${roomMessages.length} messages:`, roomMessages);
-        }
-        
-        // Show welcome notification
-        setNotifications([{
-          id: Date.now(),
-          type: 'info',
-          title: 'Kết nối thành công',
-          message: `Chào mừng ${user.FullName} đến với Agent Dashboard!`,
-          timestamp: new Date().toISOString()
-        }]);
-      }, 1000);
+    if (isAuthenticated && user) {
+      initializeChat();
+    } else {
+      checkGuestSession();
     }
-  }, [user, isAuthenticated]);
-
-  // Kết nối WebSocket
-  const connectWebSocket = () => {
-    if (!isAuthenticated()) return;
     
-    // Mock WebSocket connection for agents
-    if (user && (user.Role === 'agent' || user.Role === 'admin')) {
-      console.log('Mock WebSocket connected for agent:', user.FullName);
-      setIsConnected(true);
-      return;
-    }
-
-    if (socket?.readyState === WebSocket.OPEN) return;
-
-    try {
-      const wsUrl = `ws://localhost:8000/ws/chat/${user?.UserID}`;
-      const newSocket = new WebSocket(wsUrl);
-
-      newSocket.onopen = () => {
-        console.log('WebSocket connected');
-        setIsConnected(true);
-        setSocket(newSocket);
-        reconnectAttempts.current = 0;
-        
-        // Gửi thông tin xác thực
-        newSocket.send(JSON.stringify({
-          type: 'auth',
-          token: localStorage.getItem('authToken'),
-          userInfo: user
-        }));
-      };
-
-      newSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        handleWebSocketMessage(data);
-      };
-
-      newSocket.onclose = () => {
-        console.log('WebSocket disconnected');
-        setIsConnected(false);
-        setSocket(null);
-        
-        // Tự động kết nối lại
-        if (reconnectAttempts.current < maxReconnectAttempts) {
-          reconnectAttempts.current++;
-          setTimeout(() => {
-            connectWebSocket();
-          }, 2000 * reconnectAttempts.current);
-        }
-      };
-
-      newSocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setIsConnected(false);
-      };
-
-    } catch (error) {
-      console.error('WebSocket connection error:', error);
-    }
-  };
-
-  // Xử lý tin nhắn WebSocket
-  const handleWebSocketMessage = (data) => {
-    switch (data.type) {
-      case 'message':
-        setMessages(prev => [...prev, data.message]);
-        break;
-      
-      case 'room_joined':
-        setCurrentRoom(data.room);
-        setMessages(data.messages || []);
-        break;
-      
-      case 'room_list':
-        setActiveRooms(data.rooms);
-        break;
-      
-      case 'agent_status':
-        setOnlineAgents(data.agents);
-        break;
-      
-      case 'notification':
-        setNotifications(prev => [
-          ...prev,
-          { ...data.notification, id: Date.now() }
-        ]);
-        break;
-      
-      case 'typing':
-        setTyping(data.typing ? data.user : null);
-        break;
-      
-      case 'file_uploaded':
-        setMessages(prev => [...prev, data.message]);
-        break;
-      
-      default:
-        console.log('Unknown message type:', data.type);
-    }
-  };
-
-  // Gửi tin nhắn
-  const sendMessage = (content, type = 'text', fileData = null) => {
-    // Mock send message for agents
-    if (user && (user.Role === 'agent' || user.Role === 'admin') && currentRoom) {
-      const newMessage = {
-        id: `msg_${Date.now()}`,
-        content,
-        type,
-        timestamp: new Date().toISOString(),
-        sender: { 
-          id: user.UserID, 
-          name: user.FullName, 
-          role: user.Role 
-        },
-        room_id: currentRoom.id,
-        status: 'sent',
-        fileData
-      };
-
-      // Add message to current messages
-      setMessages(prev => [...prev, newMessage]);
-
-      // Update room's last message and timestamp
-      const updatedRooms = activeRooms.map(room => 
-        room.id === currentRoom.id 
-          ? {
-              ...room,
-              lastMessage: {
-                content: type === 'file' ? `📎 ${fileData?.name || 'File đính kèm'}` : content,
-                type,
-                timestamp: newMessage.timestamp
-              },
-              updatedAt: newMessage.timestamp,
-              messageCount: room.messageCount + 1
-            }
-          : room
-      );
-      setActiveRooms(updatedRooms);
-
-      console.log('Mock message sent:', newMessage);
-      
-      // Simulate message status updates
-      setTimeout(() => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-        ));
-      }, 1000);
-
-      setTimeout(() => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === newMessage.id ? { ...msg, status: 'read' } : msg
-        ));
-      }, 2000);
-
-      return;
-    }
-
-    if (!socket || !currentRoom) return;
-
-    const message = {
-      type: 'send_message',
-      room_id: currentRoom.id,
-      content,
-      message_type: type,
-      file_data: fileData,
-      timestamp: new Date().toISOString()
+    return () => {
+      cleanup();
     };
+  }, [isAuthenticated, user]);
 
-    socket.send(JSON.stringify(message));
+  useEffect(() => {
+    console.log('🎯 ChatContext initial setup...');
+    
+    // Debug current socket state
+    console.log('🔌 Socket service state:', {
+      isConnected: socketService.socket?.connected,
+      socketId: socketService.socket?.id
+    });
+    
+    // Only setup basic connection listeners initially
+    setupBasicListeners();
+    
+    return () => {
+      console.log('🎯 ChatContext removing all listeners...');
+      removeSocketListeners();
+    };
+  }, []); // Empty dependency array - will setup once
+
+  const setupBasicListeners = () => {
+    console.log('🔧 Setting up basic socket listeners...');
+    
+    // Connection events only
+    socketService.on('socket_connected', () => {
+      console.log('🟢 ChatContext - Socket connected');
+      setIsSocketConnected(true);
+    });
+
+    socketService.on('socket_disconnected', () => {
+      console.log('🔴 ChatContext - Socket disconnected');
+      setIsSocketConnected(false);
+    });
+
+    // Error events
+    socketService.on('socket_error', (error) => {
+      console.error('Socket error:', error);
+    });
+    
+    console.log('✅ Basic socket listeners setup completed');
   };
 
-  // Tham gia phòng chat
-  const joinRoom = (roomId) => {
-    // Mock join room for agents
-    if (user && (user.Role === 'agent' || user.Role === 'admin')) {
-      const room = MOCK_ROOMS.find(r => r.id === roomId);
-      if (room) {
-        setCurrentRoom(room);
-        // Load mock messages for this room
-        const roomMessages = MOCK_MESSAGES[roomId] || [];
-        setMessages(roomMessages);
+  const initializeChat = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Clear guest session when user authenticates
+      setGuestSession(null);
+      setIsGuestMode(false);
+      localStorage.removeItem('guestSession');
+      localStorage.removeItem('guestId');
+      
+      // Connect socket and wait for actual connection
+      console.log('🔌 Connecting socket for user:', user.role);
+      socketService.connect('user');
+      
+      // Wait for socket to actually connect
+      let attempts = 0;
+      while (!socketService.socket?.connected && attempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (!socketService.socket?.connected) {
+        console.warn('⚠️ Socket connection timeout, proceeding anyway');
+      } else {
+        console.log('✅ Socket connected successfully');
+      }
+      
+      // Load rooms based on user role
+      if (user.role === 'agent' || user.role === 'admin') {
+        await loadAgentRooms();
+      } else {
+        await loadCustomerRooms();
+      }
+      
+    } catch (error) {
+      console.error('Failed to initialize chat:', error);
+      toast.error('Không thể tải dữ liệu chat');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const checkGuestSession = () => {
+    const savedGuestSession = localStorage.getItem('guestSession');
+    const savedGuestId = localStorage.getItem('guestId');
+    
+    if (savedGuestSession && savedGuestId) {
+      try {
+        const session = JSON.parse(savedGuestSession);
+        setGuestSession(session);
+        setIsGuestMode(true);
+        
+        // Chỉ connect socket khi thực sự cần chat, không connect ngay
+        console.log('🎯 Guest session found, ready to connect when needed');
+      } catch (error) {
+        console.error('Invalid guest session data:', error);
+        localStorage.removeItem('guestSession');
+        localStorage.removeItem('guestId');
+      }
+    }
+  };
+
+  const setupSocketListeners = () => {
+    console.log('🔧 Setting up socket listeners...');
+    console.log('🔧 handleNewMessage function exists:', typeof handleNewMessage === 'function');
+    
+    // Connection events
+    socketService.on('socket_connected', () => {
+      console.log('🟢 ChatContext - Socket connected');
+      setIsSocketConnected(true);
+    });
+
+    socketService.on('socket_disconnected', () => {
+      console.log('🔴 ChatContext - Socket disconnected');
+      setIsSocketConnected(false);
+    });
+
+    // Message events
+    socketService.on('new_message', (data) => {
+      console.log('🎯 new_message listener called in ChatContext with data:', data);
+      handleNewMessage(data);
+    });
+
+    socketService.on('message_sent', (data) => {
+      handleMessageSent(data);
+    });
+
+    // Typing events
+    socketService.on('user_typing', (data) => {
+      handleUserTyping(data);
+    });
+
+    // Room events
+    socketService.on('room_created', (data) => {
+      handleRoomCreated(data);
+    });
+
+    socketService.on('new_room_created', (data) => {
+      handleNewRoomCreated(data);
+    });
+
+    socketService.on('room_updated', (data) => {
+      handleRoomUpdated(data);
+    });
+
+    socketService.on('room_closed', (data) => {
+      handleRoomClosed(data);
+    });
+
+    socketService.on('agent_assigned', (data) => {
+      handleAgentAssigned(data);
+    });
+
+    // User events
+    socketService.on('user_joined', (data) => {
+      handleUserJoined(data);
+    });
+
+    socketService.on('user_left', (data) => {
+      handleUserLeft(data);
+    });
+
+    // Notification events
+    socketService.on('new_notification', (data) => {
+      handleNewNotification(data);
+    });
+
+    // Error events
+    socketService.on('socket_error', (error) => {
+      console.error('Socket error:', error);
+      toast.error('Lỗi kết nối realtime');
+    });
+    
+    console.log('✅ All socket listeners setup completed');
+  };
+
+  const removeSocketListeners = () => {
+    socketService.clearAllListeners();
+  };
+
+  const cleanup = () => {
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+    }
+    if (messagePollingRef.current) {
+      clearInterval(messagePollingRef.current);
+    }
+    removeSocketListeners();
+  };
+
+  // Load functions
+  const loadAgentRooms = async (filters = {}) => {
+    try {
+      const response = await chatService.getRooms({
+        page: 1,
+        limit: 50,
+        ...filters
+      });
+      
+      if (response.success) {
+        setRooms(response.data.rooms || []);
+        
+        // Join all rooms for real-time updates
+        response.data.rooms?.forEach(room => {
+          socketService.joinRoom(room.room_id, user.role);
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load agent rooms:', error);
+      toast.error('Không thể tải danh sách phòng chat');
+    }
+  };
+
+  const loadCustomerRooms = async () => {
+    try {
+      // Use student-specific endpoint
+      const response = await chatService.getMyRooms();
+      
+      if (response.success) {
+        const customerRooms = response.data.rooms || [];
+        setRooms(customerRooms);
+        
+        console.log('📚 Loaded', customerRooms.length, 'customer rooms:', customerRooms);
+        
+        // If customer has active room, set it as activeRoom
+        const activeCustomerRoom = customerRooms.find(room => room.status !== 'closed');
+        if (activeCustomerRoom) {
+          setActiveRoom(activeCustomerRoom);
+          console.log('🎯 Setting existing room as active:', activeCustomerRoom.room_id);
+          
+          // Join the room via socket
+          socketService.joinRoom(activeCustomerRoom.room_id, 'customer');
+          
+          // Load messages for the active room
+          await loadMessages(activeCustomerRoom.room_id);
+        }
+        
+        // Join all customer's rooms for notifications
+        customerRooms.forEach(room => {
+          socketService.joinRoom(room.room_id, 'customer');
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load customer rooms:', error);
+      toast.error('Không thể tải lịch sử chat');
+    }
+  };
+
+  const loadMessages = async (roomId, page = 1) => {
+    try {
+      console.log('📨 Loading messages for room:', roomId, 'page:', page);
+      setIsLoading(true);
+      const response = await chatService.getMessages(roomId, page, 50);
+      
+      console.log('📨 Messages API response:', response);
+      
+      if (response.success) {
+        const newMessages = response.data.messages || [];
+        console.log('📨 Loaded', newMessages.length, 'messages');
+        
+        // Sort messages by timestamp (oldest first)
+        const sortedMessages = newMessages.sort((a, b) => 
+          new Date(a.created_at || a.timestamp) - new Date(b.created_at || b.timestamp)
+        );
+        
+        if (page === 1) {
+          setMessages(sortedMessages);
+        } else {
+          setMessages(prev => {
+            const combined = [...sortedMessages, ...prev];
+            return combined.sort((a, b) => 
+              new Date(a.created_at || a.timestamp) - new Date(b.created_at || b.timestamp)
+            );
+          });
+        }
         
         // Mark messages as read
-        if (room.unreadCount > 0) {
-          const updatedRooms = activeRooms.map(r => 
-            r.id === roomId ? { ...r, unreadCount: 0 } : r
-          );
-          setActiveRooms(updatedRooms);
+        markRoomAsRead(roomId);
+      }
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      toast.error('Không thể tải tin nhắn');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Helper functions
+  const markRoomAsRead = useCallback((roomId) => {
+    setUnreadCounts(prev => ({
+      ...prev,
+      [roomId]: 0
+    }));
+  }, []);
+
+  // Socket event handlers
+  const handleNewMessage = useCallback((data) => {
+    console.log('🔔 handleNewMessage received:', data);
+    console.log('🔔 Current user role:', user?.role);
+    console.log('🔔 Active room:', activeRoom?.room_id);
+    const { message, roomId } = data;
+    
+    // Add message to current room if it's active
+    if (activeRoom?.room_id === roomId) {
+      console.log('📨 Adding message to active room:', roomId, message);
+      
+      // Remove any temp message from same sender if exists
+      setMessages(prev => {
+        console.log('📊 Current messages before update:', prev.length);
+        console.log('📊 Last 3 messages:', prev.slice(-3).map(m => ({ id: m.id || m.message_id, content: m.content.substring(0, 20), sender: m.sender_type })));
+        console.log('📊 New message details:', { id: message.id || message.message_id, content: message.content, sender: message.sender_type });
+        
+        // Check if message already exists (prevent duplicates)
+        const existingMessage = prev.find(msg => {
+          // Compare by message_id or id
+          const msgId = msg.id || msg.message_id;
+          const newMsgId = message.id || message.message_id;
+          
+          if (msgId && newMsgId && msgId === newMsgId) {
+            return true;
+          }
+          
+          // Fallback: compare by content + sender + time (within 1 second)
+          if (msg.content === message.content && 
+              msg.sender_id?.toString() === message.sender_id?.toString() &&
+              Math.abs(new Date(msg.created_at || msg.timestamp) - new Date(message.created_at || message.timestamp)) < 1000) {
+            return true;
+          }
+          
+          return false;
+        });
+        
+        if (existingMessage) {
+          console.log('🔄 Message already exists, skipping:', message.id || message.message_id);
+          return prev;
         }
         
-        console.log(`Mock joined room: ${roomId}, loaded ${roomMessages.length} messages:`, roomMessages);
-      }
-      return;
-    }
-
-    if (!socket) return;
-
-    socket.send(JSON.stringify({
-      type: 'join_room',
-      room_id: roomId
-    }));
-  };
-
-  // Tạo phòng chat mới
-  const createRoom = (agentId = null, priority = 'normal') => {
-    if (!socket) return;
-
-    socket.send(JSON.stringify({
-      type: 'create_room',
-      agent_id: agentId,
-      priority,
-      user_info: {
-        name: user?.FullName,
-        email: user?.Email,
-        role: user?.Role
-      }
-    }));
-  };
-
-  // Rời phòng chat
-  const leaveRoom = (roomId) => {
-    // Mock leave room for agents
-    if (user && (user.Role === 'agent' || user.Role === 'admin')) {
-      setCurrentRoom(null);
-      setMessages([]);
-      console.log(`Mock left room: ${roomId}`);
-      return;
-    }
-
-    if (!socket) return;
-
-    socket.send(JSON.stringify({
-      type: 'leave_room',
-      room_id: roomId
-    }));
-    
-    setCurrentRoom(null);
-    setMessages([]);
-  };
-
-  // Gửi trạng thái typing
-  const sendTyping = (isTyping) => {
-    // Mock typing for agents
-    if (user && (user.Role === 'agent' || user.Role === 'admin')) {
-      console.log(`Mock typing: ${isTyping} in room: ${currentRoom?.id}`);
-      return;
-    }
-
-    if (!socket || !currentRoom) return;
-
-    socket.send(JSON.stringify({
-      type: 'typing',
-      room_id: currentRoom.id,
-      is_typing: isTyping
-    }));
-  };
-
-  // Upload file
-  const uploadFile = (file) => {
-    if (!socket || !currentRoom) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const fileData = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        data: e.target.result
-      };
-
-      socket.send(JSON.stringify({
-        type: 'upload_file',
-        room_id: currentRoom.id,
-        file_data: fileData
-      }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Đánh giá chất lượng hỗ trợ
-  const submitRating = (roomId, rating, feedback = '') => {
-    if (!socket) return;
-
-    socket.send(JSON.stringify({
-      type: 'submit_rating',
-      room_id: roomId,
-      rating,
-      feedback
-    }));
-  };
-
-  // Xóa thông báo
-  const removeNotification = (notificationId) => {
-    setNotifications(prev => 
-      prev.filter(notification => notification.id !== notificationId)
-    );
-  };
-
-  // Kết nối khi có user
-  useEffect(() => {
-    if (isAuthenticated() && user) {
-      connectWebSocket();
-    }
-
-    return () => {
-      if (socket) {
-        socket.close();
-      }
-    };
-  }, [user, isAuthenticated]);
-
-  // Cleanup khi unmount
-  useEffect(() => {
-    return () => {
-      if (socket) {
-        socket.close();
-      }
-    };
-  }, [socket]);
-
-  // Tạo guest session (Mock version cho testing)
-  const createGuestSession = async (guestInfo) => {
-    try {
-      // Mock API call - thay thế bằng real API sau
-      console.log('Creating guest session with info:', guestInfo);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock response data
-      const mockResponse = {
-        sessionId: `guest_${Date.now()}`,
-        ticketId: `ticket_${Date.now()}`,
-        status: 'success'
-      };
-      
-      // Lưu thông tin guest session
-      localStorage.setItem('guestSession', JSON.stringify({
-        sessionId: mockResponse.sessionId,
-        ticketId: mockResponse.ticketId,
-        guestInfo: guestInfo,
-        createdAt: new Date().toISOString()
-      }));
-
-      // Mock kết nối WebSocket
-      console.log('Mock WebSocket connection for guest:', mockResponse.sessionId);
-      setIsConnected(true);
-      
-      // Mock tạo room cho guest
-      const mockRoom = {
-        id: mockResponse.ticketId,
-        customer: {
-          name: guestInfo.fullName,
-          email: guestInfo.email,
-          phone: guestInfo.phone
-        },
-        subject: guestInfo.subject,
-        status: 'waiting',
-        createdAt: new Date().toISOString(),
-        messages: []
-      };
-      
-      setActiveRooms([mockRoom]);
-      setCurrentRoom(mockRoom);
-      
-      // Mock welcome message
-      const welcomeMessage = {
-        id: `msg_${Date.now()}`,
-        type: 'system',
-        content: `Xin chào ${guestInfo.fullName}! Cảm ơn bạn đã liên hệ với HUTECH Support. Chúng tôi sẽ kết nối bạn với nhân viên hỗ trợ sớm nhất có thể.`,
-        timestamp: new Date().toISOString(),
-        sender: { name: 'System' }
-      };
-      
-      setMessages([welcomeMessage]);
-      
-      return mockResponse;
-    } catch (error) {
-      console.error('Error creating guest session:', error);
-      throw new Error('Không thể tạo phiên hỗ trợ. Vui lòng thử lại sau.');
-    }
-  };
-
-  // Kết nối WebSocket cho guest
-  const connectWebSocketGuest = (sessionId) => {
-    try {
-      const ws = new WebSocket(`ws://localhost:8000/ws/chat/guest/${sessionId}`);
-      
-      ws.onopen = () => {
-        console.log('Guest WebSocket connected');
-        setSocket(ws);
-        setIsConnected(true);
-        reconnectAttempts.current = 0;
-      };
-
-      ws.onmessage = (event) => {
-        handleWebSocketMessage(JSON.parse(event.data));
-      };
-
-      ws.onclose = () => {
-        console.log('Guest WebSocket disconnected');
-        setIsConnected(false);
-        handleReconnectGuest(sessionId);
-      };
-
-      ws.onerror = (error) => {
-        console.error('Guest WebSocket error:', error);
-        setIsConnected(false);
-      };
-
-    } catch (error) {
-      console.error('Failed to connect guest WebSocket:', error);
-    }
-  };
-
-  // Xử lý reconnect cho guest
-  const handleReconnectGuest = (sessionId) => {
-    if (reconnectAttempts.current < maxReconnectAttempts) {
-      setTimeout(() => {
-        reconnectAttempts.current++;
-        console.log(`Guest reconnect attempt ${reconnectAttempts.current}`);
-        connectWebSocketGuest(sessionId);
-      }, Math.pow(2, reconnectAttempts.current) * 1000);
-    }
-  };
-
-  // Guest Session Management Functions
-  const initializeGuestSession = () => {
-    const sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const session = {
-      id: sessionId,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      isActive: true,
-      roomId: null
-    };
-    
-    setGuestSession(session);
-    localStorage.setItem('chat_guest_session', JSON.stringify(session));
-    
-    // Set session timeout (30 minutes of inactivity)
-    resetSessionTimeout();
-    
-    console.log('Guest session created:', sessionId);
-    return session;
-  };
-
-  const updateGuestActivity = () => {
-    if (guestSession) {
-      const updatedSession = {
-        ...guestSession,
-        lastActivity: new Date().toISOString()
-      };
-      setGuestSession(updatedSession);
-      localStorage.setItem('chat_guest_session', JSON.stringify(updatedSession));
-      resetSessionTimeout();
-    }
-  };
-
-  const resetSessionTimeout = () => {
-    if (sessionTimeout.current) {
-      clearTimeout(sessionTimeout.current);
-    }
-    
-    // 30 minutes timeout
-    sessionTimeout.current = setTimeout(() => {
-      handleGuestDisconnect('timeout');
-    }, 30 * 60 * 1000);
-  };
-
-  const handleGuestDisconnect = (reason = 'unknown') => {
-    console.log(`Guest disconnected: ${reason}`);
-    
-    if (guestSession && currentRoom) {
-      // Notify agent about guest disconnect
-      const disconnectMessage = {
-        id: `disconnect_${Date.now()}`,
-        content: `Khách đã rời cuộc hội thoại (${reason === 'timeout' ? 'Timeout' : 'Đóng trang'})`,
-        type: 'system',
-        timestamp: new Date().toISOString(),
-        sender: { name: 'System', role: 'system' },
-        room_id: currentRoom.id,
-        status: 'delivered'
-      };
-
-      setMessages(prev => [...prev, disconnectMessage]);
-      
-      // Update room status to indicate guest left
-      const updatedRooms = activeRooms.map(room => 
-        room.id === currentRoom.id 
-          ? {
-              ...room,
-              status: 'abandoned',
-              lastMessage: {
-                content: disconnectMessage.content,
-                type: 'system',
-                timestamp: disconnectMessage.timestamp
-              },
-              updatedAt: disconnectMessage.timestamp,
-              guestDisconnected: true,
-              disconnectReason: reason
-            }
-          : room
-      );
-      setActiveRooms(updatedRooms);
-    }
-
-    // Clean up session
-    setGuestSession(null);
-    localStorage.removeItem('chat_guest_session');
-    
-    if (sessionTimeout.current) {
-      clearTimeout(sessionTimeout.current);
-    }
-
-    if (heartbeatInterval.current) {
-      clearInterval(heartbeatInterval.current);
-    }
-  };
-
-  const restoreGuestSession = () => {
-    try {
-      const savedSession = localStorage.getItem('chat_guest_session');
-      if (savedSession) {
-        const session = JSON.parse(savedSession);
-        const now = new Date();
-        const lastActivity = new Date(session.lastActivity);
-        const timeDiff = now - lastActivity;
+        const filteredMessages = prev.filter(msg => {
+          // Remove temp messages that match this real message
+          if (msg.status === 'sending' && 
+              msg.sender_id?.toString() === message.sender_id?.toString() &&
+              msg.content === message.content) {
+            console.log('🗑️ Removing temp message:', msg.temp_id);
+            return false;
+          }
+          return true;
+        });
         
-        // If last activity was less than 30 minutes ago, restore session
-        if (timeDiff < 30 * 60 * 1000 && session.isActive) {
-          setGuestSession(session);
-          resetSessionTimeout();
-          console.log('Guest session restored:', session.id);
-          return session;
+        // Add new message and sort by timestamp (oldest first)
+        const newMessages = [...filteredMessages, message];
+        console.log('🔄 Updating messages state with new message count:', newMessages.length);
+        console.log('🔄 New message details:', { id: message.id, content: message.content.substring(0, 30), sender: message.sender_type });
+        return newMessages.sort((a, b) => new Date(a.created_at || a.timestamp) - new Date(b.created_at || b.timestamp));
+      });
+      
+      markRoomAsRead(roomId);
+    } else {
+      console.log('📨 Message for different room:', roomId, 'current room:', activeRoom?.room_id);
+      // Update unread count
+      setUnreadCounts(prev => ({
+        ...prev,
+        [roomId]: (prev[roomId] || 0) + 1
+      }));
+      
+      // Show notification for agents - always show notification for new messages
+      if (user?.role === 'agent' || user?.role === 'admin') {
+        console.log('🔔 Showing notification for agent');
+        toast.info(`💬 Tin nhắn mới từ ${message.sender_name || 'Khách hàng'} - Room: ${roomId.slice(0, 8)}...`);
+      } else {
+        toast.info(`Tin nhắn mới từ ${message.sender_name || 'Unknown'}`);
+      }
+    }
+    
+    // Update last message in room list
+    setRooms(prev => prev.map(room => 
+      room.room_id === roomId 
+        ? { ...room, last_message: message, updated_at: message.created_at }
+        : room
+    ));
+    
+    // Force re-render by updating a timestamp
+    setLastUpdateTime(Date.now());
+  }, [activeRoom, user, markRoomAsRead]);
+
+  const handleMessageSent = useCallback((data) => {
+    const { message } = data;
+    
+    // Update message in current messages if it's a local message
+    setMessages(prev => prev.map(msg => 
+      msg.temp_id === message.temp_id 
+        ? { ...message, status: 'sent' }
+        : msg
+    ));
+  }, []);
+
+  const handleUserTyping = useCallback((data) => {
+    const { user_name, is_typing, roomId } = data;
+    
+    if (activeRoom?.room_id === roomId) {
+      setTypingUsers(prev => {
+        if (is_typing) {
+          return prev.includes(user_name) ? prev : [...prev, user_name];
         } else {
-          // Session expired, clean up
-          localStorage.removeItem('chat_guest_session');
-          console.log('Guest session expired, cleaned up');
+          return prev.filter(name => name !== user_name);
         }
-      }
-    } catch (error) {
-      console.error('Error restoring guest session:', error);
-      localStorage.removeItem('chat_guest_session');
+      });
     }
-    return null;
-  };
+  }, [activeRoom]);
 
-  // Page visibility and beforeunload event handlers
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && guestSession) {
-        updateGuestActivity();
-      }
-    };
+  const handleRoomCreated = useCallback((data) => {
+    const { room } = data;
+    
+    setRooms(prev => [room, ...prev]);
+    
+    // Auto-join if user is agent/admin
+    if (user?.role === 'agent' || user?.role === 'admin') {
+      socketService.joinRoom(room.room_id, user.role);
+      toast.info(`Phòng chat mới: ${room.subject}`);
+    }
+  }, [user]);
 
-    const handleBeforeUnload = () => {
-      if (guestSession) {
-        handleGuestDisconnect('page_close');
-      }
-    };
+  const handleNewRoomCreated = useCallback((data) => {
+    const { room } = data;
+    
+    // Only agents/admins should see notification for new rooms
+    if (user?.role === 'agent' || user?.role === 'admin') {
+      console.log('🔔 New room created for agent:', room);
+      setRooms(prev => [room, ...prev]);
+      toast.success(`Phòng chat mới từ ${room.customer_name}: ${room.subject}`);
+    }
+  }, [user]);
 
-    const handlePageHide = () => {
-      if (guestSession) {
-        handleGuestDisconnect('page_hide');
-      }
-    };
+  const handleRoomUpdated = useCallback((data) => {
+    const { room } = data;
+    
+    setRooms(prev => prev.map(r => 
+      r.room_id === room.room_id ? { ...r, ...room } : r
+    ));
+    
+    // Update active room if it's the same room
+    if (activeRoom?.room_id === room.room_id) {
+      setActiveRoom(prev => ({ ...prev, ...room }));
+    }
+  }, [activeRoom]);
 
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide);
+  const handleRoomClosed = useCallback((data) => {
+    const { roomId, reason } = data;
+    
+    setRooms(prev => prev.map(room => 
+      room.room_id === roomId 
+        ? { ...room, status: 'closed' }
+        : room
+    ));
+    
+    if (activeRoom?.room_id === roomId) {
+      toast.info(`Phòng chat đã đóng: ${reason}`);
+    }
+  }, [activeRoom]);
 
-    // Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handlePageHide);
-    };
-  }, [guestSession]);
+  const handleAgentAssigned = useCallback((data) => {
+    const { roomId, agent } = data;
+    
+    setRooms(prev => prev.map(room => 
+      room.room_id === roomId 
+        ? { ...room, assigned_agent: agent, status: 'active' }
+        : room
+    ));
+    
+    if (activeRoom?.room_id === roomId) {
+      setActiveRoom(prev => ({ ...prev, assigned_agent: agent, status: 'active' }));
+      toast.success(`Agent ${agent.full_name} đã được phân công`);
+    }
+  }, [activeRoom]);
 
-  // Initialize guest session on component mount
-  useEffect(() => {
-    if (!isAuthenticated() && !user) {
-      restoreGuestSession();
+  const handleUserJoined = useCallback((data) => {
+    // Socket data structure: {userId, userType, userName, timestamp, roomId}
+    const { userName, userId, roomId } = data;
+    
+    if (activeRoom?.room_id === roomId) {
+      toast.info(`${userName || userId || 'User'} đã tham gia cuộc trò chuyện`);
+    }
+  }, [activeRoom]);
+
+  const handleUserLeft = useCallback((data) => {
+    // Socket data structure: {userId, userType, userName, timestamp, roomId}  
+    const { userName, userId, roomId } = data;
+    
+    if (activeRoom?.room_id === roomId) {
+      toast.info(`${userName || userId || 'User'} đã rời cuộc trò chuyện`);
+    }
+  }, [activeRoom]);
+
+  const handleNewNotification = useCallback((data) => {
+    const { notification } = data;
+    
+    setNotifications(prev => [notification, ...prev]);
+    
+    // Show toast for important notifications
+    if (['new_chat_room', 'high_priority_chat', 'low_rating_received'].includes(notification.type)) {
+      toast.info(notification.title);
     }
   }, []);
 
+  // Action functions
+  const createRoom = async (roomData) => {
+    try {
+      setIsLoading(true);
+      console.log('🎯 Creating room - User authenticated:', isAuthenticated);
+      console.log('👤 User data:', user);
+      console.log('📝 Room data:', roomData);
+      
+      const response = await chatService.createRoom(roomData);
+      
+      if (response.success) {
+        const newRoom = response.data.room;
+        setRooms(prev => [newRoom, ...prev]);
+        
+        // Set as current room immediately
+        setActiveRoom(newRoom);
+        
+        // Join the new room
+        socketService.joinRoom(newRoom.room_id, user?.role || 'customer');
+        
+        toast.success('Tạo phòng chat thành công');
+        return newRoom;
+      }
+    } catch (error) {
+      console.error('Failed to create room:', error);
+      const errorMsg = error.message || 'Không thể tạo phòng chat';
+      toast.error(errorMsg);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createGuestSession = async (sessionData) => {
+    try {
+      setIsLoading(true);
+      const response = await guestService.createSession(sessionData);
+      
+      if (response.success) {
+        const session = response.data.session;
+        setGuestSession(session);
+        setIsGuestMode(true);
+        
+        // Force enable socket connection state immediately
+        console.log('🔌 Creating guest session and enabling chat immediately');
+        setIsSocketConnected(true);
+        
+        // Connect socket as guest (async, don't wait)
+        socketService.connect('guest');
+        
+        toast.success('Tạo phiên chat thành công');
+        return session;
+      }
+    } catch (error) {
+      console.error('Failed to create guest session:', error);
+      toast.error('Không thể tạo phiên chat');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const joinRoom = async (roomId) => {
+    try {
+      console.log('🎯 joinRoom called:', roomId);
+      
+      // Ensure socket is connected
+      if (!socketService.socket?.connected) {
+        console.log('🔌 Socket not connected, connecting...');
+        if (user) {
+          socketService.connect('user');
+        } else if (isGuestMode) {
+          socketService.connect('guest');
+        }
+        
+        // Wait for connection
+        let attempts = 0;
+        while (!socketService.socket?.connected && attempts < 30) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+      }
+      
+      if (!socketService.socket?.connected) {
+        console.error('❌ Socket connection failed for joinRoom');
+        throw new Error('Không thể kết nối socket');
+      }
+      
+      const response = await chatService.getRoomDetails(roomId);
+      
+      if (response.success) {
+        const room = response.data.room;
+        setActiveRoom(room);
+        console.log('✅ Set active room:', room.room_id);
+        
+        // Join socket room
+        console.log('🚪 Joining room via socket:', roomId);
+        socketService.joinRoom(roomId, user?.role || 'customer');
+        
+        // Load messages
+        await loadMessages(roomId);
+        
+        // Clear typing users
+        setTypingUsers([]);
+        
+        console.log('✅ Successfully joined room:', roomId);
+        return room;
+      }
+    } catch (error) {
+      console.error('❌ Failed to join room:', error);
+      toast.error('Không thể tham gia phòng chat');
+      throw error;
+    }
+  };
+
+  const leaveRoom = () => {
+    if (activeRoom) {
+      socketService.leaveRoom(activeRoom.room_id);
+      setActiveRoom(null);
+      setMessages([]);
+      setTypingUsers([]);
+    }
+  };
+
+  const sendMessage = async (content, messageType = 'text') => {
+    // Guest can send messages without activeRoom, but needs to create room first
+    if (!activeRoom && !isGuestMode) return;
+
+    console.log('📤 sendMessage called:', { content, activeRoom: activeRoom?.room_id, isGuestMode });
+
+    // Ensure socket is connected before sending
+    if (!socketService.socket?.connected) {
+      console.log('🔌 Socket not connected, connecting...');
+      if (user) {
+        socketService.connect('user');
+      } else if (isGuestMode) {
+        socketService.connect('guest');
+      }
+      
+      // Wait for connection
+      let attempts = 0;
+      while (!socketService.socket?.connected && attempts < 30) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (!socketService.socket?.connected) {
+        console.error('❌ Failed to connect socket');
+        toast.error('Không thể kết nối. Vui lòng thử lại!');
+        return;
+      }
+    }
+
+    const tempId = `temp_${Date.now()}`;
+    const tempMessage = {
+      temp_id: tempId,
+      content,
+      message_type: messageType,
+      sender_name: user?.full_name || guestSession?.customerName || 'Guest',
+      sender_type: user ? 'user' : 'guest',
+      sender_id: user?.user_id?.toString() || 'guest',
+      created_at: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
+      status: 'sending'
+    };
+
+    console.log('📝 Creating temp message:', tempMessage);
+
+    // Add temp message to UI
+    setMessages(prev => [...prev, tempMessage]);
+    console.log('📤 Sending message:', { content, isGuestMode, guestSession: guestSession?.id, activeRoom: activeRoom?.room_id });
+
+    try {
+      let response;
+      
+      if (isGuestMode && guestSession) {
+        // For guest: Connect socket if not connected
+        if (!socketService.socket?.connected) {
+          console.log('🔌 Connecting guest socket...');
+          socketService.connect('guest');
+          
+          // Wait for socket connection
+          let attempts = 0;
+          while (!socketService.socket?.connected && attempts < 20) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+          }
+          
+          if (!socketService.socket?.connected) {
+            console.warn('⚠️ Guest socket connection timeout');
+          } else {
+            console.log('✅ Guest socket connected successfully');
+          }
+        }
+        
+        // For guest: Create chat room first if doesn't exist
+        if (!activeRoom) {
+          console.log('🏗️ Guest creating chat room...');
+          const roomResponse = await chatService.createRoom({
+            customerName: guestSession.customerName,
+            customerEmail: guestSession.customerEmail,
+            subject: guestSession.subject || 'Guest Support Request',
+            customerType: 'guest',
+            priority: 'normal'
+          });
+          
+          if (roomResponse.success) {
+            const newRoom = roomResponse.data.room;
+            setActiveRoom(newRoom);
+            console.log('✅ Guest chat room created:', newRoom.room_id);
+            
+            // Join the room via socket
+            if (socketService.socket?.connected) {
+              socketService.joinRoom(newRoom.room_id);
+            }
+          }
+        }
+        
+        // Now send message to the chat room via socket
+        if (activeRoom && socketService.socket?.connected) {
+          console.log('📤 Guest sending message via socket to room:', activeRoom.room_id);
+          socketService.sendMessage(activeRoom.room_id, content, messageType);
+          
+          // Mark temp message as sent immediately
+          setMessages(prev => prev.map(msg => 
+            msg.temp_id === tempId ? { ...msg, status: 'sent' } : msg
+          ));
+        } else if (activeRoom) {
+          console.warn('⚠️ Guest socket not connected, falling back to API');
+          response = await chatService.sendMessage(activeRoom.room_id, {
+            content,
+            message_type: messageType
+          });
+        }
+      } else if (activeRoom) {
+        // Send as authenticated user via socket
+        console.log('📤 Sending message via socket to room:', activeRoom.room_id);
+        console.log('🔌 Socket connected?', socketService.socket?.connected);
+        
+        // Ensure user is in the room
+        socketService.joinRoom(activeRoom.room_id, user?.role || 'customer');
+        
+        if (socketService.socket?.connected) {
+          socketService.sendMessage(activeRoom.room_id, content, messageType);
+          console.log('✅ Message sent via socket');
+          
+          // Mark temp message as sent immediately (will be replaced by real message from socket)
+          setMessages(prev => prev.map(msg => 
+            msg.temp_id === tempId ? { ...msg, status: 'sent' } : msg
+          ));
+        } else {
+          console.warn('⚠️ Socket not connected, falling back to API');
+          response = await chatService.sendMessage(activeRoom.room_id, {
+            content,
+            message_type: messageType
+          });
+        }
+      }
+
+      if (response && response.success) {
+        const sentMessage = response.data.message;
+        
+        // Replace temp message with real message (only for API responses)
+        setMessages(prev => prev.map(msg => 
+          msg.temp_id === tempId ? { ...sentMessage, status: 'sent' } : msg
+        ));
+
+        console.log('✅ Message sent successfully via API, backend will emit socket event');
+      } else if (!response) {
+        // Message was sent via socket, will be handled by socket event
+        console.log('✅ Message sent via socket, waiting for socket confirmation');
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      
+      // Mark message as failed
+      setMessages(prev => prev.map(msg => 
+        msg.temp_id === tempId ? { ...msg, status: 'failed' } : msg
+      ));
+      
+      toast.error('Không thể gửi tin nhắn');
+    }
+  };
+
+  const startTyping = () => {
+    if (activeRoom) {
+      socketService.startTyping(activeRoom.room_id);
+      
+      // Auto stop typing after 3 seconds
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+      }
+      
+      typingTimerRef.current = setTimeout(() => {
+        stopTyping();
+      }, 3000);
+    }
+  };
+
+  const stopTyping = () => {
+    if (activeRoom) {
+      socketService.stopTyping(activeRoom.room_id);
+    }
+    
+    if (typingTimerRef.current) {
+      clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = null;
+    }
+  };
+
+  const assignAgent = async (roomId, agentId) => {
+    try {
+      const response = await chatService.updateRoomStatus(roomId, {
+        status: 'active',
+        assignedAgentId: agentId
+      });
+      
+      if (response.success) {
+        toast.success('Phân công agent thành công');
+        
+        // Emit socket event
+        socketService.assignAgent(roomId, agentId);
+        
+        return response.data.room;
+      }
+    } catch (error) {
+      console.error('Failed to assign agent:', error);
+      toast.error('Không thể phân công agent');
+      throw error;
+    }
+  };
+
+  const closeRoom = async (roomId, reason = '') => {
+    try {
+      const response = await chatService.closeRoom(roomId, reason);
+      
+      if (response.success) {
+        toast.success('Đóng phòng chat thành công');
+        
+        // Emit socket event
+        socketService.closeRoom(roomId, reason);
+        
+        // If it's the active room, leave it
+        if (activeRoom?.room_id === roomId) {
+          setActiveRoom(null);
+          setMessages([]);
+        }
+        
+        return response.data.room;
+      }
+    } catch (error) {
+      console.error('Failed to close room:', error);
+      toast.error('Không thể đóng phòng chat');
+      throw error;
+    }
+  };
+
+  const refreshRooms = useCallback(async () => {
+    if (user?.role === 'agent' || user?.role === 'admin') {
+      await loadAgentRooms();
+    } else {
+      await loadCustomerRooms();
+    }
+  }, [user?.role]); // 🔧 Memoized to prevent infinite re-renders
+
+  const endGuestSession = async () => {
+    if (guestSession) {
+      try {
+        await guestService.endSession(guestSession.id);
+        setGuestSession(null);
+        setIsGuestMode(false);
+        socketService.disconnect();
+        toast.info('Đã kết thúc phiên chat');
+      } catch (error) {
+        console.error('Failed to end guest session:', error);
+      }
+    }
+  };
+
+  const connectGuestSocket = () => {
+    if (isGuestMode && guestSession && !isSocketConnected) {
+      console.log('🔌 Connecting guest socket...', { guestSession: guestSession.id });
+      socketService.connect('guest');
+    } else {
+      console.log('🔌 Guest socket already connected or not ready:', { 
+        isGuestMode, 
+        hasGuestSession: !!guestSession, 
+        isSocketConnected 
+      });
+    }
+  };
+
+  // Context value
   const value = {
     // State
-    socket,
-    isConnected,
+    rooms,
+    activeRoom,
     messages,
-    activeRooms,
-    currentRoom,
+    isLoading,
     onlineAgents,
+    typingUsers,
+    unreadCounts,
     notifications,
-    typing,
-    rooms: activeRooms,
     guestSession,
+    isGuestMode,
+    isSocketConnected,
+    isConnected: isSocketConnected, // Alias for compatibility
+    lastUpdateTime, // Add this for forcing re-renders
     
     // Actions
-    sendMessage,
-    joinRoom,
     createRoom,
-    leaveRoom,
-    sendTyping,
-    uploadFile,
-    submitRating,
-    removeNotification,
     createGuestSession,
-    initializeGuestSession,
-    updateGuestActivity,
-    handleGuestDisconnect,
+    joinRoom,
+    leaveRoom,
+    sendMessage,
+    startTyping,
+    stopTyping,
+    assignAgent,
+    closeRoom,
+    markRoomAsRead,
+    refreshRooms,
+    loadMessages,
+    endGuestSession,
+    connectGuestSocket,
     
-    // Utils
-    connectWebSocket
+    // Utilities
+    setActiveRoom,
+    setMessages,
+    setRooms
   };
+
+  // Setup socket listeners after all handlers are defined
+  useEffect(() => {
+    if (typeof handleNewMessage === 'function' && typeof handleMessageSent === 'function') {
+      console.log('🔄 Re-setting up socket listeners with fresh handlers...');
+      removeSocketListeners();
+      setupSocketListeners();
+    }
+  }, [handleNewMessage, handleMessageSent]);
 
   return (
     <ChatContext.Provider value={value}>
@@ -1332,5 +998,3 @@ export const ChatProvider = ({ children }) => {
     </ChatContext.Provider>
   );
 };
-
-export default ChatContext;
