@@ -50,26 +50,11 @@ export const ChatProvider = ({ children }) => {
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    console.log('🎯 ChatContext initial setup...');
-    
-    // Debug current socket state
-    console.log('🔌 Socket service state:', {
-      isConnected: socketService.socket?.connected,
-      socketId: socketService.socket?.id
-    });
-    
-    // Only setup basic connection listeners initially
+    // Initialize socket listeners for basic events (before authentication)
     setupBasicListeners();
-    
-    return () => {
-      console.log('🎯 ChatContext removing all listeners...');
-      removeSocketListeners();
-    };
   }, []); // Empty dependency array - will setup once
 
   const setupBasicListeners = () => {
-    console.log('🔧 Setting up basic socket listeners...');
-    
     // Connection events only
     socketService.on('socket_connected', () => {
       console.log('🟢 ChatContext - Socket connected');
@@ -505,6 +490,9 @@ export const ChatProvider = ({ children }) => {
     
     if (activeRoom?.room_id === roomId) {
       toast.info(`Phòng chat đã đóng: ${reason}`);
+      // Clear active room when it's closed via socket
+      setActiveRoom(null);
+      setMessages([]);
     }
   }, [activeRoom]);
 
@@ -909,6 +897,72 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const customerCloseRoom = async (roomId, options = {}) => {
+    try {
+      console.log('🎯 Customer closing room:', roomId, 'with options:', options);
+      
+      // Check authentication status
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+      console.log('🔐 Current token exists:', !!token);
+      console.log('🔐 User authenticated:', !!user);
+      console.log('🔐 Guest mode:', isGuestMode);
+      
+      const response = await chatService.customerCloseRoom(roomId, options);
+      
+      if (response.success) {
+        toast.success('Đã kết thúc phiên chat');
+        
+        // Don't emit socket event here - let the backend handle it to avoid race conditions
+        // socketService.closeRoom(roomId, options.reason || '');
+        
+        // If it's the active room, leave it
+        if (activeRoom?.room_id === roomId || activeRoom?.id === roomId) {
+          setActiveRoom(null);
+          setMessages([]);
+        }
+        
+        // Refresh rooms to update status
+        await refreshRooms();
+        
+        return response.data;
+      }
+    } catch (error) {
+      console.error('❌ Failed to close room as customer. Full error details:');
+      console.error('❌ Error object:', error);
+      console.error('❌ Error message:', error?.message);
+      console.error('❌ Error response:', error?.response);
+      console.error('❌ Error response data:', error?.response?.data);
+      console.error('❌ Error status:', error?.response?.status);
+      
+      // Check if it's a "room already closed" error
+      if (error?.message?.includes('already closed') || 
+          error?.response?.data?.message?.includes('already closed') ||
+          error?.originalError?.response?.data?.message?.includes('already closed') ||
+          (error?.status === 400 && error?.message?.includes('already closed'))) {
+        console.log('📝 Room already closed, treating as success');
+        toast.info('Phiên chat đã được kết thúc');
+        
+        // Still clean up the UI
+        if (activeRoom?.room_id === roomId || activeRoom?.id === roomId) {
+          setActiveRoom(null);
+          setMessages([]);
+        }
+        
+        await refreshRooms();
+        return { roomId, status: 'closed' };
+      }
+      
+      // For other errors, still show a message but don't fail completely
+      const errorMessage = error?.message || 
+                          error?.response?.data?.message || 
+                          error?.originalError?.response?.data?.message || 
+                          'Unknown error';
+      console.log('🔧 Error is not "already closed", message:', errorMessage);
+      toast.error(`Có lỗi xảy ra: ${errorMessage}`);
+      throw error;
+    }
+  };
+
   const refreshRooms = useCallback(async () => {
     if (user?.role === 'agent' || user?.role === 'admin') {
       await loadAgentRooms();
@@ -971,6 +1025,7 @@ export const ChatProvider = ({ children }) => {
     stopTyping,
     assignAgent,
     closeRoom,
+    customerCloseRoom,
     markRoomAsRead,
     refreshRooms,
     loadMessages,
@@ -986,7 +1041,7 @@ export const ChatProvider = ({ children }) => {
   // Setup socket listeners after all handlers are defined
   useEffect(() => {
     if (typeof handleNewMessage === 'function' && typeof handleMessageSent === 'function') {
-      console.log('🔄 Re-setting up socket listeners with fresh handlers...');
+      // Re-setting up socket listeners with fresh handlers
       removeSocketListeners();
       setupSocketListeners();
     }
@@ -998,3 +1053,5 @@ export const ChatProvider = ({ children }) => {
     </ChatContext.Provider>
   );
 };
+
+export default ChatProvider;

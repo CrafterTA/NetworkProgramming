@@ -5,8 +5,8 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import ChatHeader from './ChatHeader';
 import RoomList from './RoomList';
+import RatingModal from './RatingModal';
 // import FileUpload from './FileUpload';
-// import RatingModal from './RatingModal';
 
 const ChatWindow = ({ onClose }) => {
   const [view, setView] = useState('chat'); // 'chat', 'rooms', 'agents'
@@ -150,12 +150,6 @@ const ChatWindow = ({ onClose }) => {
           <>
             {currentRoom || (isGuestMode && guestSession) ? (
               <>
-                {console.log('🎯 ChatWindow - Showing chat interface:', { 
-                  currentRoom: !!currentRoom, 
-                  isGuestMode, 
-                  guestSession: !!guestSession,
-                  isConnected 
-                })}
                 {/* Messages Area */}
                 <div className="messages-container">
                   <MessageList 
@@ -177,13 +171,6 @@ const ChatWindow = ({ onClose }) => {
             ) : (
               /* No Room Selected */
               <div className="no-room-selected">
-                {console.log('📋 ChatWindow - Showing welcome screen:', { 
-                  currentRoom: !!currentRoom, 
-                  isGuestMode, 
-                  guestSession: !!guestSession,
-                  isAuthenticated,
-                  isConnected 
-                })}
                 <div className="welcome-message">
                   <i className="ri-customer-service-2-line"></i>
                   <h3>Chào mừng đến với HUTECH Support!</h3>
@@ -303,7 +290,7 @@ const ChatWindow = ({ onClose }) => {
           onClose={() => setShowRating(false)}
           onComplete={() => {
             setShowRating(false);
-            leaveRoom(currentRoom.id);
+            // Room will be closed by RatingModal via customerCloseRoom
           }}
         />
       )}

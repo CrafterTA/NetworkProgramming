@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'        const refreshResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/rooms/${roomId}/mark_read`, {
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
 import AgentSidebar from '../components/agent/AgentSidebar';
@@ -69,7 +69,7 @@ const AgentChat = () => {
   const handleMarkAsRead = async (roomId) => {
     console.log('🔍 handleMarkAsRead called with roomId:', roomId);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
       console.log('🔍 Token exists:', !!token);
       
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/chat/rooms/${roomId}/mark_read`, {
@@ -92,7 +92,8 @@ const AgentChat = () => {
         
         if (refreshResult.ok) {
           const refreshData = await refreshResult.json();
-          localStorage.setItem('token', refreshData.data.accessToken);
+          localStorage.setItem('accessToken', refreshData.data.accessToken);
+          localStorage.setItem('token', refreshData.data.accessToken); // Keep both for compatibility
           console.log('✅ Token refreshed, retrying mark-as-read...');
           
           // Retry with new token

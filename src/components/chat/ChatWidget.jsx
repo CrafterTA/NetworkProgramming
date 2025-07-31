@@ -12,44 +12,21 @@ const ChatWidget = () => {
   const { isSocketConnected, notifications, createGuestSession, guestSession } = useChat();
   const { isAuthenticated, user } = useAuth();
 
-  const handleWidgetClick = () => {
-    console.log('🎯 Chat widget clicked', {
-      isAuthenticated,
-      guestSession: !!guestSession,
-      savedGuestSession: !!localStorage.getItem('guestSession'),
-      savedGuestId: !!localStorage.getItem('guestId')
-    });
-    
+  const handleChatToggle = () => {
     if (isAuthenticated) {
-      // User đã đăng nhập - mở chat trực tiếp
-      console.log('👤 Authenticated user - opening chat directly');
-      setIsOpen(true);
+      setIsOpen(!isOpen);
     } else {
-      // Kiểm tra xem có guest session trong localStorage không
       const savedGuestSession = localStorage.getItem('guestSession');
       const savedGuestId = localStorage.getItem('guestId');
       
-      console.log('🔍 Guest session check:', {
-        savedGuestSession: !!savedGuestSession,
-        savedGuestId: !!savedGuestId,
-        guestSession: !!guestSession
-      });
-      
-      if (savedGuestSession && savedGuestId) {
-        // Đã có guest session - mở chat
-        console.log('👻 Existing guest session - opening chat');
+      if (savedGuestSession || savedGuestId) {
         setIsOpen(true);
-        setShowGuestForm(false);
       } else {
-        // Khách vãng lai chưa có session - hiển thị form thông tin
-        console.log('📝 New guest - showing info form');
-        setShowGuestForm(true);
         setIsOpen(true);
+        setShowGuestForm(true);
       }
     }
-  };
-
-  const handleGuestFormSubmit = async (guestInfo) => {
+  };  const handleGuestFormSubmit = async (guestInfo) => {
     setIsCreatingGuestSession(true);
     try {
       console.log('🔄 Creating guest session...', guestInfo);
@@ -75,13 +52,16 @@ const ChatWidget = () => {
     return notifications?.length || 0;
   };
 
-  console.log('🔍 ChatWidget render state:', {
-    isOpen,
-    showGuestForm,
-    isAuthenticated,
-    hasGuestSession: !!guestSession,
-    savedGuestSession: !!localStorage.getItem('guestSession')
-  });
+  // Debug render state - remove in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 ChatWidget render state:', {
+      isOpen,
+      showGuestForm,
+      isAuthenticated,
+      hasGuestSession: !!guestSession,
+      savedGuestSession: !!localStorage.getItem('guestSession')
+    });
+  }
 
   return (
     <>
@@ -89,7 +69,7 @@ const ChatWidget = () => {
       <div className="chat-widget">
         <button 
           className={`chat-toggle-btn ${isOpen ? 'open' : ''}`}
-          onClick={handleWidgetClick}
+          onClick={handleChatToggle}
           title={isAuthenticated ? "Mở chat hỗ trợ" : "Bắt đầu chat hỗ trợ"}
         >
           {isOpen ? (
@@ -116,19 +96,13 @@ const ChatWidget = () => {
         {isOpen && (
           <div className="chat-window-container">
             {showGuestForm ? (
-              <>
-                {console.log('🔍 Rendering GuestInfoForm')}
-                <GuestInfoForm
-                  onSubmit={handleGuestFormSubmit}
-                  onCancel={handleClose}
-                  isLoading={isCreatingGuestSession}
-                />
-              </>
+              <GuestInfoForm
+                onSubmit={handleGuestFormSubmit}
+                onCancel={handleClose}
+                isLoading={isCreatingGuestSession}
+              />
             ) : (
-              <>
-                {console.log('🔍 Rendering ChatWindow')}
-                <ChatWindow onClose={handleClose} />
-              </>
+              <ChatWindow onClose={handleClose} />
             )}
           </div>
         )}

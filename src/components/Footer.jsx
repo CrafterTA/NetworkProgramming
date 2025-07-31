@@ -132,7 +132,7 @@ const Footer = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .footer {
           background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
           color: #e2e8f0;

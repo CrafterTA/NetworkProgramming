@@ -8,8 +8,11 @@ const MessageList = ({ messages, currentUser, typing }) => {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
 
-  console.log('🔄 MessageList re-rendering with:', messages.length, 'messages');
-  console.log('📝 Messages array:', messages.map(m => ({ id: m.id, content: m.content?.slice(0, 20), created_at: m.created_at })));
+  // Debug logs - only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔄 MessageList re-rendering with:', messages.length, 'messages');
+    console.log('📝 Messages array:', messages.map(m => ({ id: m.id, content: m.content?.slice(0, 20), created_at: m.created_at })));
+  }
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {

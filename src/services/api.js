@@ -46,6 +46,7 @@ api.interceptors.response.use(
           const { accessToken } = response.data.data.tokens;
           Cookies.set('accessToken', accessToken, { expires: 1 }); // 1 day
           localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('token', accessToken); // Backward compatibility
           
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -95,6 +96,7 @@ export const authService = {
       Cookies.set('accessToken', accessToken, { expires: 1 }); // 1 day
       Cookies.set('refreshToken', refreshToken, { expires: 7 }); // 7 days
       localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem('token', accessToken); // Backward compatibility
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
       
@@ -139,6 +141,7 @@ export const authService = {
       
       Cookies.set('accessToken', access_token, { expires: 1 });
       localStorage.setItem('accessToken', access_token);
+      localStorage.setItem('token', access_token); // Backward compatibility
       
       return response.data;
     } catch (error) {
@@ -148,7 +151,8 @@ export const authService = {
 
   handleError(error) {
     const message = error.response?.data?.message || error.message || 'Có lỗi xảy ra';
-    return { message, status: error.response?.status };
+    const status = error.response?.status;
+    return { message, status, originalError: error };
   }
 };
 
@@ -220,7 +224,6 @@ export const chatService = {
 
   async getMyRooms() {
     try {
-      console.log('📚 Getting my rooms for student...');
       const response = await api.get('/chat/my-rooms');
       return response.data;
     } catch (error) {
@@ -231,8 +234,6 @@ export const chatService = {
 
   async createRoom(roomData) {
     try {
-      console.log('🏗️ Creating room with data:', roomData);
-      
       // Check if this is a guest session
       const guestSession = localStorage.getItem('guestSession');
       const guestId = localStorage.getItem('guestId');
@@ -246,12 +247,10 @@ export const chatService = {
           'X-Guest-Session': guestId
         };
       } else {
-        // Authenticated user
-        console.log('�🔐 Current token:', localStorage.getItem('accessToken')?.substring(0, 50) + '...');
+        // Authenticated user  
       }
       
       const response = await api.post('/chat/rooms', roomData, config);
-      console.log('✅ Room created successfully:', response.data);
       return response.data;
     } catch (error) {
       console.error('❌ Failed to create room:', error.response?.data || error.message);
@@ -337,6 +336,19 @@ export const chatService = {
   async closeRoom(roomId, reason = '') {
     try {
       const response = await api.put(`/chat/rooms/${roomId}/close`, { reason });
+      return response.data;
+    } catch (error) {
+      throw authService.handleError(error);
+    }
+  },
+
+  async customerCloseRoom(roomId, { reason = '', rating = null, comment = '' } = {}) {
+    try {
+      const response = await api.put(`/chat/rooms/${roomId}/customer-close`, { 
+        reason, 
+        rating, 
+        comment 
+      });
       return response.data;
     } catch (error) {
       throw authService.handleError(error);

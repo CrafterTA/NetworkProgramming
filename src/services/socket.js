@@ -176,33 +176,28 @@ class SocketService {
   }
 
   // Room management
-  joinRoom(roomId, userType = 'customer') {
-    if (!this.socket?.connected) {
-      console.warn('⚠️ Socket not connected, cannot join room');
-      return false;
+  joinRoom(roomId, userType = 'user') {
+    if (!this.socket || !this.isConnected) {
+      console.warn('Cannot join room: Socket not connected');
+      return;
     }
 
-    console.log(`🚪 Joining room: ${roomId} as ${userType}`);
-    console.log(`🚪 Socket ID: ${this.socket.id}`);
-    this.socket.emit('join_room', { roomId, userType });
-    
-    // Add a one-time listener for room join confirmation
-    this.socket.once('room_info', (data) => {
-      console.log('🚪 ✅ Successfully joined room:', data);
+    this.socket.emit('join_room', { roomId, userType }, (data) => {
+      if (data?.success) {
+        // Successfully joined room
+      } else {
+        console.error('Failed to join room:', data?.message);
+      }
     });
-    
-    return true;
   }
 
   leaveRoom(roomId) {
-    if (!this.socket?.connected) {
-      console.warn('⚠️ Socket not connected, cannot leave room');
-      return false;
+    if (!this.socket || !this.isConnected) {
+      console.warn('Cannot leave room: Socket not connected');
+      return;
     }
 
-    console.log(`🚪 Leaving room: ${roomId}`);
     this.socket.emit('leave_room', { roomId });
-    return true;
   }
 
   // Message management
@@ -346,8 +341,9 @@ class SocketService {
   }
 
   clearAllListeners() {
-    this.listeners.clear();
-    console.log('🧹 All socket listeners cleared');
+    if (this.socket) {
+      this.socket.removeAllListeners();
+    }
   }
 }
 
