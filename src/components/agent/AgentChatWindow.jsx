@@ -15,6 +15,8 @@ const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
     markMessageAsRead,
     updateRoomStatus,
     closeRoom,
+    transferRoom,
+    getAvailableAgents,
     lastUpdateTime
   } = useChat();
 
@@ -35,6 +37,12 @@ const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
 
   const [showCustomerInfo, setShowCustomerInfo] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [availableAgents, setAvailableAgents] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState('');
+  const [closeReason, setCloseReason] = useState('');
+  const [transferReason, setTransferReason] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
 
@@ -71,18 +79,54 @@ const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
   };
 
   const handleFileUpload = (file) => {
-    uploadFile(file);
+    uploadFile(room?.room_id || room?.id, file);
   };
 
   const handleCloseRoom = () => {
-    if (confirm('Bạn có chắc chắn muốn đóng cuộc hội thoại này?')) {
-      leaveRoom(room.id);
+    setShowCloseModal(true);
+  };
+
+  const confirmCloseRoom = async () => {
+    try {
+      await closeRoom(room?.room_id || room?.id, closeReason);
+      setShowCloseModal(false);
+      setCloseReason('');
+    } catch (error) {
+      console.error('Failed to close room:', error);
     }
   };
 
-  const handleTransferRoom = () => {
-    // TODO: Implement room transfer logic
-    console.log('Transfer room to another agent');
+  const handleTransferRoom = async () => {
+    try {
+      const agents = await getAvailableAgents();
+      setAvailableAgents(agents);
+      setShowTransferModal(true);
+    } catch (error) {
+      console.error('Failed to get available agents:', error);
+    }
+  };
+
+  const confirmTransferRoom = async () => {
+    if (!selectedAgent) {
+      alert('Vui lòng chọn agent để chuyển tiếp');
+      return;
+    }
+
+    console.log('🔄 Transfer room debug:', {
+      roomId: room?.room_id || room?.id,
+      selectedAgent,
+      transferReason,
+      selectedAgentType: typeof selectedAgent
+    });
+
+    try {
+      await transferRoom(room?.room_id || room?.id, selectedAgent, transferReason);
+      setShowTransferModal(false);
+      setSelectedAgent('');
+      setTransferReason('');
+    } catch (error) {
+      console.error('Failed to transfer room:', error);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -230,6 +274,111 @@ const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
           onClose={() => setShowCustomerInfo(false)}
           onSubmitRating={submitRating}
         />
+      )}
+
+      {/* Close Room Modal */}
+      {showCloseModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Đóng cuộc hội thoại</h3>
+              <button 
+                className="close-btn"
+                onClick={() => setShowCloseModal(false)}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn đóng cuộc hội thoại với <strong>{room.customer_name || 'khách hàng này'}</strong>?</p>
+              <div className="form-group">
+                <label>Lý do đóng (không bắt buộc):</label>
+                <textarea
+                  value={closeReason}
+                  onChange={(e) => setCloseReason(e.target.value)}
+                  placeholder="Nhập lý do đóng cuộc hội thoại..."
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowCloseModal(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn btn-danger"
+                onClick={confirmCloseRoom}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Đang đóng...' : 'Đóng cuộc hội thoại'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Room Modal */}
+      {showTransferModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Chuyển tiếp cuộc hội thoại</h3>
+              <button 
+                className="close-btn"
+                onClick={() => setShowTransferModal(false)}
+              >
+                <i className="ri-close-line"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>Chuyển tiếp cuộc hội thoại với <strong>{room.customer_name || 'khách hàng này'}</strong> cho agent khác.</p>
+              
+              <div className="form-group">
+                <label>Chọn agent:</label>
+                <select
+                  value={selectedAgent}
+                  onChange={(e) => setSelectedAgent(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="">-- Chọn agent --</option>
+                  {availableAgents.map(agent => (
+                    <option key={agent.user_id} value={agent.user_id}>
+                      {agent.full_name} ({agent.active_chats || 0} cuộc trò chuyện)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Lý do chuyển tiếp (không bắt buộc):</label>
+                <textarea
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  placeholder="Nhập lý do chuyển tiếp..."
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => setShowTransferModal(false)}
+              >
+                Hủy
+              </button>
+              <button 
+                className="btn btn-primary"
+                onClick={confirmTransferRoom}
+                disabled={isLoading || !selectedAgent}
+              >
+                {isLoading ? 'Đang chuyển...' : 'Chuyển tiếp'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <style>{`
@@ -391,6 +540,159 @@ const AgentChatWindow = ({ room, messages: roomMessages, currentAgent }) => {
           color: var(--text-light);
           max-width: 400px;
           line-height: 1.6;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 0.75rem;
+          width: 90%;
+          max-width: 500px;
+          max-height: 90vh;
+          overflow: hidden;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1.5rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .modal-header h3 {
+          margin: 0;
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: var(--text-dark);
+        }
+
+        .close-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: none;
+          background: none;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          color: #6b7280;
+          transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+          background: #f3f4f6;
+          color: #374151;
+        }
+
+        .modal-body {
+          padding: 1.5rem;
+        }
+
+        .modal-body p {
+          margin: 0 0 1rem 0;
+          color: var(--text-dark);
+          line-height: 1.6;
+        }
+
+        .form-group {
+          margin-bottom: 1rem;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 0.5rem;
+          font-weight: 500;
+          color: var(--text-dark);
+        }
+
+        .form-group textarea,
+        .form-select {
+          width: 100%;
+          padding: 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 0.5rem;
+          font-size: 0.9rem;
+          transition: border-color 0.2s;
+          resize: vertical;
+        }
+
+        .form-group textarea:focus,
+        .form-select:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 1rem;
+          padding: 1.5rem;
+          border-top: 1px solid #e5e7eb;
+          background: #f9fafb;
+        }
+
+        .btn {
+          padding: 0.625rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 500;
+          font-size: 0.9rem;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .btn-secondary {
+          background: #f3f4f6;
+          color: #374151;
+          border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+          background: #e5e7eb;
+        }
+
+        .btn-primary {
+          background: var(--primary-color);
+          color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          background: #4338ca;
+        }
+
+        .btn-danger {
+          background: #ef4444;
+          color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+          background: #dc2626;
         }
 
         @media (max-width: 768px) {

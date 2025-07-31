@@ -74,13 +74,31 @@ const AgentSidebar = ({
   };
 
   const getLastMessage = (room) => {
-    if (!room.lastMessage) return 'Chưa có tin nhắn';
+    // Check last_message_data (structured data) first, then fallback to simple formats
+    const lastMessageData = room.last_message_data;
+    const lastMessage = room.lastMessage || room.last_message;
     
-    if (room.lastMessage.type === 'file') {
-      return `📎 ${room.lastMessage.fileName || 'File đính kèm'}`;
+    if (lastMessageData) {
+      // Handle structured message data from backend
+      if (lastMessageData.message_type === 'file') {
+        return `📎 ${lastMessageData.file_name || 'File đính kèm'}`;
+      }
+      return lastMessageData.content || 'Tin nhắn mới';
     }
     
-    return room.lastMessage.content || 'Tin nhắn mới';
+    if (!lastMessage) return 'Chưa có tin nhắn';
+    
+    // Handle different message formats for backward compatibility
+    if (typeof lastMessage === 'string') {
+      // Simple string content
+      return lastMessage;
+    }
+    
+    if (lastMessage.type === 'file' || lastMessage.message_type === 'file') {
+      return `📎 ${lastMessage.fileName || lastMessage.original_name || 'File đính kèm'}`;
+    }
+    
+    return lastMessage.content || lastMessage || 'Tin nhắn mới';
   };
 
   const statusCounts = useMemo(() => {
@@ -257,7 +275,7 @@ const AgentSidebar = ({
                     {room.customer_name || room.customer?.name || 'Khách vãng lai'}
                   </h4>
                   <span className="time">
-                    {formatTime(room.updated_at || room.created_at)}
+                    {formatTime(room.last_message_at || room.updated_at || room.created_at)}
                   </span>
                 </div>
 

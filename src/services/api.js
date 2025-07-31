@@ -353,6 +353,36 @@ export const chatService = {
     } catch (error) {
       throw authService.handleError(error);
     }
+  },
+
+  async transferRoom(roomId, { newAgentId, reason = '' }) {
+    try {
+      console.log('🔄 API transferRoom called with:', {
+        roomId,
+        newAgentId,
+        reason,
+        newAgentIdType: typeof newAgentId,
+        payload: { newAgentId, reason }
+      });
+      
+      const response = await api.put(`/chat/rooms/${roomId}/transfer`, { 
+        newAgentId, 
+        reason 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('🔄 API transferRoom error:', error.response?.data || error);
+      throw authService.handleError(error);
+    }
+  },
+
+  async getAvailableAgents() {
+    try {
+      const response = await api.get('/chat/agents/available');
+      return response.data;
+    } catch (error) {
+      throw authService.handleError(error);
+    }
   }
 };
 

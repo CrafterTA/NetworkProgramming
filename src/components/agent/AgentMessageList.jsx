@@ -85,11 +85,46 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
     }
   };
 
+  const handleFileDownload = (fileId, fileName) => {
+    if (!fileId) {
+      console.error('No file ID provided');
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    const downloadUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/files/download/${fileId}?token=${token}`;
+    
+    // Create a temporary link and click it to trigger download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName || 'download';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const isAgent = (message) => {
     return message.sender_type === 'agent' || message.sender_type === 'admin';
   };
 
   const renderMessage = (message, index) => {
+    // Add debugging for file messages
+    if (message.message_type === 'file') {
+      console.log('📁 Rendering file message:', {
+        message_id: message.message_id,
+        message_type: message.message_type,
+        content: message.content,
+        file: message.file,
+        file_structure: {
+          hasFile: !!message.file,
+          file_id: message.file?.file_id,
+          original_name: message.file?.original_name,
+          file_size: message.file?.file_size,
+          mime_type: message.file?.mime_type
+        }
+      });
+    }
+    
     // Simplified logic for message classification
     const isSystemMessage = message.message_type === 'system' || message.sender_type === 'system';
     
@@ -151,25 +186,28 @@ const AgentMessageList = ({ messages, currentAgent, room }) => {
           <div 
             className="message-bubble"
           >
-            {message.type === 'file' ? (
+            {message.message_type === 'file' ? (
               <div className="file-message">
                 <div className="file-info">
                   <i className="ri-file-line"></i>
                   <div>
-                    <div className="file-name">{message.fileName}</div>
-                    <div className="file-size">{formatFileSize(message.fileSize)}</div>
+                    <div className="file-name">{message.file?.original_name || 'Unknown file'}</div>
+                    <div className="file-size">{formatFileSize(message.file?.file_size || 0)}</div>
                   </div>
                 </div>
-                <button className="download-btn">
+                <button 
+                  className="download-btn"
+                  onClick={() => handleFileDownload(message.file?.file_id, message.file?.original_name)}
+                >
                   <i className="ri-download-line"></i>
                 </button>
               </div>
-            ) : message.type === 'image' ? (
+            ) : (message.message_type === 'image' || (message.message_type === 'file' && message.file?.mime_type?.startsWith('image/'))) ? (
               <div className="image-message">
                 <img 
-                  src={message.fileUrl} 
-                  alt={message.fileName}
-                  onClick={() => window.open(message.fileUrl, '_blank')}
+                  src={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/files/download/${message.file?.file_id}?token=${localStorage.getItem('accessToken')}`}
+                  alt={message.file?.original_name || 'Image'}
+                  onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/files/download/${message.file?.file_id}?token=${localStorage.getItem('accessToken')}`, '_blank')}
                 />
                 {message.content && (
                   <div className="image-caption">{message.content}</div>

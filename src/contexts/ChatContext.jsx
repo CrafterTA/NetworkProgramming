@@ -175,6 +175,7 @@ export const ChatProvider = ({ children }) => {
     socketService.on('new_room_created', handleNewRoomCreated);
     socketService.on('room_updated', handleRoomUpdated);
     socketService.on('room_closed', handleRoomClosed);
+    socketService.on('room_transferred', handleRoomTransferred);
     socketService.on('agent_assigned', handleAgentAssigned);
     socketService.on('user_joined', handleUserJoined);
     socketService.on('user_left', handleUserLeft);
@@ -213,6 +214,15 @@ export const ChatProvider = ({ children }) => {
       });
       
       if (response.success) {
+        console.log('🔍 Raw rooms response from backend:', response.data.rooms);
+        console.log('🔍 Rooms sorting order:', response.data.rooms.map(r => ({
+          room_id: r.room_id,
+          customer_name: r.customer_name,
+          last_message_at: r.last_message_at,
+          last_message_data: r.last_message_data,
+          created_at: r.created_at
+        })));
+        
         setRooms(response.data.rooms || []);
         
         // Join all rooms for real-time updates
@@ -474,6 +484,29 @@ export const ChatProvider = ({ children }) => {
       setMessages([]);
     }
   }, [activeRoom]);
+
+  const handleRoomTransferred = useCallback((data) => {
+    const { roomId, newAgent, previousAgent, reason } = data;
+    
+    setRooms(prev => prev.map(room => 
+      room.room_id === roomId 
+        ? { ...room, assigned_agent: newAgent }
+        : room
+    ));
+    
+    if (activeRoom?.room_id === roomId) {
+      if (user?.user_id === previousAgent?.user_id) {
+        // Current agent was the previous agent, leave the room
+        toast.info(`Cuộc hội thoại đã được chuyển cho ${newAgent.full_name}`);
+        setActiveRoom(null);
+        setMessages([]);
+      } else if (user?.user_id === newAgent?.user_id) {
+        // Current agent is the new agent
+        setActiveRoom(prev => ({ ...prev, assigned_agent: newAgent }));
+        toast.success(`Bạn đã được phân công cuộc hội thoại mới từ ${previousAgent?.full_name || 'agent khác'}`);
+      }
+    }
+  }, [activeRoom, user]);
 
   const handleAgentAssigned = useCallback((data) => {
     const { roomId, agent } = data;
@@ -1102,6 +1135,57 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const transferRoom = async (roomId, newAgentId, reason = '') => {
+    try {
+      setIsLoading(true);
+      
+      console.log('🔄 ChatContext transferRoom called with:', {
+        roomId,
+        newAgentId,
+        reason,
+        newAgentIdType: typeof newAgentId
+      });
+      
+      const response = await chatService.transferRoom(roomId, { newAgentId, reason });
+      
+      if (response.success) {
+        toast.success('Chuyển tiếp cuộc hội thoại thành công');
+        
+        // Refresh rooms to update assignment
+        await refreshRooms();
+        
+        // If it's the active room and current user is agent, leave it
+        if (activeRoom?.room_id === roomId && (user?.role === 'agent')) {
+          setActiveRoom(null);
+          setMessages([]);
+        }
+        
+        return response.data.room;
+      }
+    } catch (error) {
+      console.error('Failed to transfer room:', error);
+      toast.error('Không thể chuyển tiếp cuộc hội thoại');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getAvailableAgents = async () => {
+    try {
+      const response = await chatService.getAvailableAgents();
+      
+      if (response.success) {
+        return response.data.agents;
+      }
+      return [];
+    } catch (error) {
+      console.error('Failed to get available agents:', error);
+      toast.error('Không thể tải danh sách agent');
+      return [];
+    }
+  };
+
   // Context value
   const value = {
     // State
@@ -1136,6 +1220,8 @@ export const ChatProvider = ({ children }) => {
     endGuestSession,
     connectGuestSocket,
     uploadFile,
+    transferRoom,
+    getAvailableAgents,
     
     // Utilities
     setActiveRoom,

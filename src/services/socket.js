@@ -310,6 +310,14 @@ class SocketService {
     return true;
   }
 
+  transferRoom(roomId, newAgentId, reason = '') {
+    if (!this.socket?.connected) return false;
+    
+    console.log(`🔄 Transferring room ${roomId} to agent ${newAgentId}:`, reason);
+    this.socket.emit('transfer_room', { roomId, newAgentId, reason });
+    return true;
+  }
+
   // Connection management
   disconnect() {
     if (this.socket) {
